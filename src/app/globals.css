@@ -427,3 +427,30 @@ html{scroll-behavior:smooth}
 .side a.soon:hover{background:none;color:var(--muted)}
 .side a.soon .pill{font-size:.64rem}
 .top-in form{margin:0}
+/* portfólio com fotos */
+.capa-b{padding:0;background:none;border:0;border-radius:var(--r);overflow:hidden;display:block}
+.foto{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--r);display:block;background:var(--sunk)}
+.foto-g{aspect-ratio:auto;max-height:62vh;object-fit:contain;background:var(--sunk)}
+.galeria{display:flex;flex-direction:column;gap:8px}
+.miniaturas{display:flex;gap:6px;overflow-x:auto}
+.miniaturas button{border:2px solid transparent;border-radius:6px;padding:0;background:none;cursor:pointer;flex:none}
+.miniaturas button.on{border-color:var(--accent)}
+.miniaturas img{width:72px;height:54px;object-fit:cover;border-radius:4px;display:block}
+.svc-cta{margin-top:auto}
+/* clientes */
+.clist{display:flex;flex-direction:column;gap:10px}
+.ccard summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.ccard summary::-webkit-details-marker{display:none}
+.cc-main{display:flex;flex-direction:column;min-width:0}
+.cc-side{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.ccard[open] summary{padding-bottom:4px}
+.ccard .kvg dt{font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.ccard .kvg dd{margin:0;overflow-wrap:anywhere}
+.msg-c{margin:0;padding:10px 14px;background:var(--sunk);border-radius:var(--r);white-space:pre-wrap;font-size:.92rem}
+.fotos-ed{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.fe{position:relative;border-radius:var(--r);overflow:hidden;background:var(--sunk);aspect-ratio:4/3}
+.fe img{width:100%;height:100%;object-fit:cover;display:block}
+.fe-a{position:absolute;inset:auto 0 0 0;display:flex;gap:4px;justify-content:center;padding:6px;background:linear-gradient(transparent,rgba(0,0,0,.55))}
+.fe-add{display:grid;place-items:center;border:2px dashed var(--line);cursor:pointer;color:var(--accent);font-weight:600;font-size:.9rem;text-align:center;padding:8px}
+.fe-add:hover{border-color:var(--accent)}
+.aviso-st{display:flex;gap:8px;flex-wrap:wrap}

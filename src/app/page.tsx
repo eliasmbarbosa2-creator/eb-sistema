@@ -1,11 +1,17 @@
-import { carregarSitePublico, linkWhatsApp } from '@/lib/dados-publicos';
+import { carregarSitePublico, carregarPortfolio, linkWhatsApp, urlFoto } from '@/lib/dados-publicos';
 import { Icone } from '@/lib/icones';
+import FormPedido from '@/components/FormPedido';
+import BotaoPedir from '@/components/BotaoPedir';
+import Portfolio from '@/components/Portfolio';
 
 // O site é gerado de novo no máximo a cada 5 minutos, ou na hora quando você publica uma alteração.
 export const revalidate = 300;
 
 export default async function Inicio() {
-  const { empresa: E, conteudo: T } = await carregarSitePublico();
+  const [{ empresa: E, conteudo: T }, trabalhos] = await Promise.all([carregarSitePublico(), carregarPortfolio()]);
+  const opcoes = [...T.servicos.map((s) => s.nome || s.titulo).filter(Boolean), 'Manutenção / outro'];
+  const fotos = Object.fromEntries(trabalhos.map((t) => [t.id, t.fotos.map(urlFoto)]));
+  const servicoPorCategoria = Object.fromEntries(T.servicos.map((s) => [s.titulo, s.nome || s.titulo]));
   const curto = E.nome.split(' ')[0];
   const wa = E.telefone ? linkWhatsApp(E.telefone, E.nome) : null;
 
@@ -20,6 +26,7 @@ export default async function Inicio() {
           </a>
           <nav className="sitenav" aria-label="Seções do site">
             <a href="#servicos">Serviços</a>
+            {trabalhos.length > 0 && <a href="#trabalhos">Trabalhos</a>}
             {T.faq.length > 0 && <a href="#duvidas">Dúvidas</a>}
             <a href="#contato">Contato</a>
           </nav>
@@ -65,6 +72,7 @@ export default async function Inicio() {
                 <h3>{s.titulo}</h3>
                 <p className="sub">{s.texto}</p>
                 {s.itens.length > 0 && <ul>{s.itens.map((x, j) => <li key={j}>{x}</li>)}</ul>}
+                <BotaoPedir className="link svc-cta" servico={s.nome || s.titulo}>Pedir orçamento →</BotaoPedir>
               </div>
             ))}
           </div>
@@ -79,6 +87,13 @@ export default async function Inicio() {
             </div>
           )}
         </section>
+
+        {trabalhos.length > 0 && (
+          <section className="sec gut" id="trabalhos">
+            <div className="sec-h"><div><div className="eyebrow ac-t">Portfólio</div><h2>{T.trabalhosTitulo}</h2></div></div>
+            <Portfolio trabalhos={trabalhos} fotos={fotos} servicoPorCategoria={servicoPorCategoria} />
+          </section>
+        )}
 
         {T.diferenciais.length > 0 && (
           <section className="sec gut">
@@ -130,7 +145,7 @@ export default async function Inicio() {
               {T.contatoDica && <p className="tip">{T.contatoDica}</p>}
             </div>
             <div className="card cform">
-              <p className="sub">O formulário de pedido de orçamento entra na próxima etapa. Por enquanto, fale pelo WhatsApp ou e-mail ao lado.</p>
+              <FormPedido servicos={opcoes} />
             </div>
           </div>
         </section>
@@ -142,7 +157,7 @@ export default async function Inicio() {
             <span className="fb"><img className="lg-d" src="/marca/marca.png" alt="" /><img className="lg-l" src="/marca/marca-claro.png" alt="" /><b>{E.nome}</b></span>
             {E.registro && <span>{E.registro}</span>}{E.cidade && <span>{E.cidade}</span>}
           </div>
-          <div className="fcol"><b>Serviços</b>{T.servicos.map((s, i) => <span key={i}>{s.titulo}</span>)}</div>
+          <div className="fcol"><b>Serviços</b>{T.servicos.map((s, i) => <BotaoPedir key={i} className="link fl" servico={s.nome || s.titulo}>{s.titulo}</BotaoPedir>)}</div>
           <div className="fcol"><b>Contato</b>{E.telefone && <span className="mono">{E.telefone}</span>}{E.email && <span>{E.email}</span>}</div>
         </div>
         <div className="foot-b">© {new Date().getFullYear()} {E.nome}</div>

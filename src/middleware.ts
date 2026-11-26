@@ -24,8 +24,10 @@ export async function middleware(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const caminho = req.nextUrl.pathname;
   const naEntrada = caminho === '/admin/entrar';
+  // Páginas de acesso que funcionam sem login (entrar, recuperar senha e o retorno do link do e-mail)
+  const livre = naEntrada || caminho === '/admin/recuperar' || caminho.startsWith('/admin/auth/');
 
-  if (!user && !naEntrada) {
+  if (!user && !livre) {
     const url = req.nextUrl.clone();
     url.pathname = '/admin/entrar';
     url.search = '';

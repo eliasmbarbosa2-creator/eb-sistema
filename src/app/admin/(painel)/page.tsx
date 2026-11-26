@@ -1,4 +1,6 @@
 import { supabaseServidor } from '@/lib/supabase/server';
+import { chavePublicaVapid } from '@/lib/avisos';
+import Avisos from './Avisos';
 
 const brl = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -11,6 +13,7 @@ export default async function Painel() {
     supabase.from('parcelas').select('valor,vencimento').eq('pago', false),
     supabase.from('materiais').select('quantidade,minimo').eq('ativo', true),
   ]);
+  const chave = await chavePublicaVapid().catch(() => null);
   const aReceber = (pend.data ?? []).reduce((s, p) => s + Number(p.valor), 0);
   const atrasado = (pend.data ?? []).filter((p) => p.vencimento < hoje).reduce((s, p) => s + Number(p.valor), 0);
   const baixo = (mats.data ?? []).filter((m) => Number(m.quantidade) <= Number(m.minimo)).length;
@@ -24,10 +27,7 @@ export default async function Painel() {
         <div className={`tile ${atrasado ? 'alert' : ''}`}><span className="eyebrow">A receber</span><span className="v">{brl(aReceber)}</span><span className="sub">{atrasado ? `${brl(atrasado)} em atraso` : 'nada em atraso'}</span></div>
         <div className={`tile ${baixo ? 'alert' : ''}`}><span className="eyebrow">Estoque baixo</span><span className="v">{baixo}</span><span className="sub">itens no mínimo ou abaixo</span></div>
       </div>
-      <div className="card">
-        <h2 className="h2">Etapa 1 concluída: a base está no ar</h2>
-        <p className="sub">Banco de dados, login e site público funcionando. Os módulos marcados como “em breve” chegam nas próximas etapas.</p>
-      </div>
+      <Avisos chave={chave} emailOk={Boolean(process.env.RESEND_API_KEY)} pushOk={Boolean(chave)} />
     </>
   );
 }

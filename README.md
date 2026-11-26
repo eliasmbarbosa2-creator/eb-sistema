@@ -11,8 +11,8 @@ Site público + sistema de gestão (clientes, orçamentos, serviços, financeiro
 | Etapa | Conteúdo | Situação |
 |---|---|---|
 | 1. Fundação | Banco de dados, segurança, login, site público, Dados da empresa | ✅ pronta |
-| 2. Site público | Formulário de orçamento, aviso por e-mail e no celular, portfólio | próxima |
-| 3. Sistema | Clientes, orçamentos (PDF + aprovação online), serviços, financeiro, estoque | — |
+| 2. Site público | Formulário de orçamento, aviso por e-mail e no celular, portfólio com fotos, Clientes, recuperar senha | ✅ pronta |
+| 3. Sistema | Orçamentos (PDF + aprovação online), serviços, financeiro, estoque | próxima |
 | 4. Acabamento | Editor do conteúdo do site, fotos, backup | — |
 
 ## Como colocar no ar (uma vez só)
@@ -39,6 +39,24 @@ Site público + sistema de gestão (clientes, orçamentos, serviços, financeiro
 
 A partir daí, cada atualização enviada ao GitHub é publicada automaticamente.
 
+### 3. Etapa 2: avisos e recuperação de senha (uma vez só)
+1. **Supabase → SQL Editor** (modo *Database*): rode `supabase/migrations/0002_avisos.sql`.
+2. **Supabase → Authentication → URL Configuration**:
+   - **Site URL:** `https://eb-instalacoes-eletrica.vercel.app`
+   - **Redirect URLs → Add URL:** `https://eb-instalacoes-eletrica.vercel.app/**`
+3. **Chave de serviço** (para o servidor enviar os avisos):
+   Supabase → **Project Settings → API Keys** → copie a **service_role** (aba *Legacy API Keys*) ou a **Secret key**.
+   Na Vercel, cadastre `SUPABASE_SERVICE_ROLE_KEY` com esse valor. **Nunca** use essa chave em variável que comece com `NEXT_PUBLIC_`.
+4. **E-mail de aviso** (Resend, gratuito até 3.000 e-mails/mês):
+   - Crie conta em [resend.com](https://resend.com) **com o mesmo e-mail em que quer receber os avisos**.
+   - **API Keys → Create API Key** (permissão *Sending access*) e copie a chave (`re_…`).
+   - Na Vercel, cadastre `RESEND_API_KEY` com essa chave.
+   - Sem domínio próprio, a Resend só entrega para o e-mail da sua conta, o que é exatamente o caso aqui.
+5. Na Vercel: **Deployments → ⋯ → Redeploy**.
+6. No celular, abra `/admin`, instale o sistema na tela inicial e, no **Painel**, toque em **Ativar avisos neste aparelho**.
+
+Variáveis opcionais: `AVISO_EMAIL` (outro destinatário; padrão = e-mail da conta Resend/empresa) e `AVISO_REMETENTE`.
+
 ## Desenvolvimento local
 
 ```bash
@@ -52,4 +70,6 @@ npm run dev                  # http://localhost:3000
 - Todas as tabelas usam **Row Level Security**: só administradores (tabela `admins`) leem e alteram dados.
 - Visitantes só podem **ler** o conteúdo público (empresa, conteúdo do site, portfólio publicado) e **enviar** pedidos de orçamento. Eles não conseguem ler os pedidos de ninguém.
 - O cadastro público de usuários fica desligado no Supabase. Sem estar na tabela `admins`, um login não acessa nada.
-- A chave `anon` pode ficar no navegador: ela só tem as permissões acima. **Nunca** coloque a chave `service_role` no projeto.
+- A chave `anon` pode ficar no navegador: ela só tem as permissões acima.
+- A chave `service_role` fica **só** na variável `SUPABASE_SERVICE_ROLE_KEY` da Vercel e é usada apenas no servidor (avisos). Nunca a coloque no código nem em variável `NEXT_PUBLIC_`.
+- Formulário do site com proteção anti-robô (campo invisível e tempo mínimo de preenchimento).

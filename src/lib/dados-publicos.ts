@@ -28,3 +28,21 @@ export function linkWhatsApp(telefone: string, nomeEmpresa: string) {
   const msg = `Olá! Vim pelo site da ${nomeEmpresa} e gostaria de pedir um orçamento.`;
   return `https://wa.me/${d}?text=${encodeURIComponent(msg)}`;
 }
+
+export type Trabalho = {
+  id: string; titulo: string; categoria: string; local: string; ano: string; descricao: string;
+  destaques: string[]; fotos: string[]; ilustracao: string;
+};
+
+export function urlFoto(caminho: string) {
+  return `${SUPABASE_URL}/storage/v1/object/public/portfolio/${caminho.split('/').map(encodeURIComponent).join('/')}`;
+}
+
+export async function carregarPortfolio(): Promise<Trabalho[]> {
+  if (!supabaseConfigurado) return [];
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
+  const { data } = await supabase.from('portfolio')
+    .select('id,titulo,categoria,local,ano,descricao,destaques,fotos,ilustracao')
+    .eq('publicado', true).order('ordem').order('criado_em', { ascending: false });
+  return (data ?? []) as Trabalho[];
+}

@@ -5,7 +5,13 @@ import { supabaseConfigurado } from '@/lib/supabase/config';
 import { sair } from '../acoes';
 import Menu from './Menu';
 
-export const metadata: Metadata = { title: 'Sistema', robots: { index: false, follow: false } };
+export const metadata: Metadata = {
+  title: 'Sistema',
+  robots: { index: false, follow: false },
+  manifest: '/app/eb.webmanifest', // só as páginas do sistema apontam para o app instalável
+  appleWebApp: { capable: true, title: 'EB Sistema', statusBarStyle: 'black-translucent' },
+  icons: { apple: '/app/icone-192.png' },
+};
 export const dynamic = 'force-dynamic';
 
 export default async function LayoutAdmin({ children }: { children: React.ReactNode }) {

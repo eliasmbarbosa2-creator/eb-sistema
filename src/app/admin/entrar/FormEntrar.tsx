@@ -10,6 +10,7 @@ export default function FormEntrar() {
       <label className="fld"><span>Senha</span><input name="senha" type="password" required autoComplete="current-password" /></label>
       {estado.erro && <p className="lerr" role="alert">{estado.erro}</p>}
       <button className="btn btn-p btn-l" type="submit" disabled={enviando}>{enviando ? 'Entrando…' : 'Entrar'}</button>
+      <a className="link" href="/admin/recuperar" style={{ justifySelf: 'center' }}>Esqueci minha senha</a>
     </form>
   );
 }
