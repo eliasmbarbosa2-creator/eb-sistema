@@ -12,9 +12,14 @@ export async function entrar(_: Estado, form: FormData): Promise<Estado> {
   const supabase = await supabaseServidor();
   const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
   // Mesma mensagem para qualquer falha: não revela se o e-mail existe.
-  if (error) return { erro: 'E-mail ou senha incorretos.' };
-  const { data: ehAdmin } = await supabase.rpc('is_admin');
+  if (error) {
+    // Motivo real só no log do servidor (Vercel > Logs); a tela mostra mensagem genérica.
+    console.warn('[login] recusado pelo Supabase Auth:', error.code ?? '', error.message);
+    return { erro: 'E-mail ou senha incorretos.' };
+  }
+  const { data: ehAdmin, error: erroAdmin } = await supabase.rpc('is_admin');
   if (!ehAdmin) {
+    console.warn('[login] senha correta, mas o usuário não está na tabela admins', erroAdmin?.message ?? '');
     await supabase.auth.signOut();
     return { erro: 'E-mail ou senha incorretos.' };
   }
