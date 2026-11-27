@@ -13,8 +13,8 @@ Site público + sistema de gestão (clientes, orçamentos, serviços, financeiro
 | 1. Fundação | Banco de dados, segurança, login, site público, Dados da empresa | ✅ pronta |
 | 2. Site público | Formulário de orçamento, aviso por e-mail e no celular, portfólio com fotos, Clientes, recuperar senha | ✅ pronta |
 | 3A/3B. Estoque e Orçamentos | Estoque com reservas e lista de compras; orçamentos com PDF, envio pelo WhatsApp e aprovação online | ✅ pronta |
-| 3C. Serviços e Financeiro | Ordens de serviço, baixa de material, parcelas e pagamentos | próxima |
-| 4. Acabamento | Editor do conteúdo do site, fotos, backup | — |
+| 3C. Serviços e Financeiro | Ordens de serviço, baixa de material, parcelas, pagamentos e cobrança; Painel com próximas ações | ✅ pronta |
+| 4. Acabamento | Editor do conteúdo do site, backup | próxima |
 
 ## Como colocar no ar (uma vez só)
 
@@ -62,6 +62,9 @@ Variáveis opcionais: `AVISO_EMAIL` (outro destinatário; padrão = e-mail da co
 No **Supabase → SQL Editor** (modo *Database*), rode `supabase/migrations/0003_orcamentos.sql`. Não precisa mexer na Vercel.
 
 O cliente vê a proposta pelo link `/p/<código>`: o código é secreto e impossível de adivinhar, a página não aparece no Google e nunca mostra o custo dos materiais.
+
+### 5. Etapa 3C (serviços e financeiro)
+No **Supabase → SQL Editor** (modo *Database*), rode `supabase/migrations/0004_servicos.sql`.
 
 ## Desenvolvimento local
 

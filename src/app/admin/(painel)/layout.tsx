@@ -20,7 +20,13 @@ export default async function LayoutAdmin({ children }: { children: React.ReactN
   if (!user) redirect('/admin/entrar');
   const supabase = await supabaseServidor();
   const { data: empresa } = await supabase.from('empresa').select('nome').eq('id', 1).maybeSingle();
-  const { count: novos } = await supabase.from('clientes').select('id', { count: 'exact', head: true }).eq('status', 'novo');
+  const hoje = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+  const [{ count: novos }, { count: atrasadas }, { data: mats }] = await Promise.all([
+    supabase.from('clientes').select('id', { count: 'exact', head: true }).eq('status', 'novo'),
+    supabase.from('parcelas').select('id', { count: 'exact', head: true }).eq('pago', false).lt('vencimento', hoje),
+    supabase.from('materiais').select('quantidade,minimo').eq('ativo', true).gt('minimo', 0),
+  ]);
+  const baixo = (mats ?? []).filter((m) => Number(m.quantidade) <= Number(m.minimo)).length;
 
   return (
     <>
@@ -39,7 +45,7 @@ export default async function LayoutAdmin({ children }: { children: React.ReactN
         </div>
       </header>
       <div className="app gut">
-        <aside className="side"><Menu novos={novos ?? 0} /></aside>
+        <aside className="side"><Menu novos={novos ?? 0} atrasadas={atrasadas ?? 0} baixo={baixo} /></aside>
         <main className="main">{children}</main>
       </div>
     </>
