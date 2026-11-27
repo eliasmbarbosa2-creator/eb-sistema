@@ -12,7 +12,8 @@ Site público + sistema de gestão (clientes, orçamentos, serviços, financeiro
 |---|---|---|
 | 1. Fundação | Banco de dados, segurança, login, site público, Dados da empresa | ✅ pronta |
 | 2. Site público | Formulário de orçamento, aviso por e-mail e no celular, portfólio com fotos, Clientes, recuperar senha | ✅ pronta |
-| 3. Sistema | Orçamentos (PDF + aprovação online), serviços, financeiro, estoque | próxima |
+| 3A/3B. Estoque e Orçamentos | Estoque com reservas e lista de compras; orçamentos com PDF, envio pelo WhatsApp e aprovação online | ✅ pronta |
+| 3C. Serviços e Financeiro | Ordens de serviço, baixa de material, parcelas e pagamentos | próxima |
 | 4. Acabamento | Editor do conteúdo do site, fotos, backup | — |
 
 ## Como colocar no ar (uma vez só)
@@ -56,6 +57,11 @@ A partir daí, cada atualização enviada ao GitHub é publicada automaticamente
 6. No celular, abra `/admin`, instale o sistema na tela inicial e, no **Painel**, toque em **Ativar avisos neste aparelho**.
 
 Variáveis opcionais: `AVISO_EMAIL` (outro destinatário; padrão = e-mail da conta Resend/empresa) e `AVISO_REMETENTE`.
+
+### 4. Etapa 3 (estoque e orçamentos)
+No **Supabase → SQL Editor** (modo *Database*), rode `supabase/migrations/0003_orcamentos.sql`. Não precisa mexer na Vercel.
+
+O cliente vê a proposta pelo link `/p/<código>`: o código é secreto e impossível de adivinhar, a página não aparece no Google e nunca mostra o custo dos materiais.
 
 ## Desenvolvimento local
 

@@ -4,10 +4,10 @@ import { usePathname } from 'next/navigation';
 const ITENS: { href: string; rotulo: string; pronto: boolean }[] = [
   { href: '/admin', rotulo: 'Painel', pronto: true },
   { href: '/admin/clientes', rotulo: 'Clientes', pronto: true },
-  { href: '/admin/orcamentos', rotulo: 'Orçamentos', pronto: false },
+  { href: '/admin/orcamentos', rotulo: 'Orçamentos', pronto: true },
   { href: '/admin/servicos', rotulo: 'Serviços', pronto: false },
   { href: '/admin/financeiro', rotulo: 'Financeiro', pronto: false },
-  { href: '/admin/estoque', rotulo: 'Estoque', pronto: false },
+  { href: '/admin/estoque', rotulo: 'Estoque', pronto: true },
   { href: '/admin/conteudo', rotulo: 'Conteúdo do site', pronto: false },
   { href: '/admin/portfolio', rotulo: 'Portfólio', pronto: true },
   { href: '/admin/empresa', rotulo: 'Dados da empresa', pronto: true },

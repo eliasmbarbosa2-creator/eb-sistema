@@ -67,7 +67,7 @@ export default async function Clientes({ searchParams }: { searchParams: Promise
               {c.mensagem ? <p className="msg-c">{c.mensagem}</p> : <p className="sub">Sem descrição.</p>}
               <div className="actions" style={{ marginTop: 12 }}>
                 <NovoCliente cliente={c} />
-                <span className="pill t-mute" title="Chega na Etapa 3">Criar orçamento · em breve</span>
+                <a className="btn btn-s btn-p" href={`/admin/orcamentos/novo?cliente=${c.id}`}>Criar orçamento</a>
               </div>
             </details>
           ))}

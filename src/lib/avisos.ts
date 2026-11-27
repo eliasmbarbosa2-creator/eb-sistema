@@ -101,3 +101,23 @@ export async function avisarNovoPedido(p: Pedido) {
   const [email, push] = await Promise.allSettled([enviarEmail(sb, p), enviarPush(sb, `Novo pedido: ${p.nome}`, corpo)]);
   console.log('[aviso] pedido novo:', 'e-mail', email.status === 'fulfilled' ? email.value : 'erro', '· celulares', push.status === 'fulfilled' ? push.value : 'erro');
 }
+
+/** Aviso quando o cliente aprova o orçamento pelo link. */
+export async function avisarAprovacao(numero: string, cliente: string) {
+  const sb = supabaseServico();
+  if (!sb) return;
+  const chave = process.env.RESEND_API_KEY?.trim();
+  const para = await emailDoAviso(sb);
+  const link = urlDoSite() ? `${urlDoSite()}/admin/servicos` : '';
+  await Promise.allSettled([
+    enviarPush(sb, `Orçamento aprovado: ${numero}`, `${cliente} aprovou pelo link. A OS e as parcelas já foram criadas.`, '/admin/orcamentos'),
+    chave && para ? fetch('https://api.resend.com/emails', {
+      method: 'POST', headers: { Authorization: `Bearer ${chave}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: process.env.AVISO_REMETENTE?.trim() || 'EB Sistema <onboarding@resend.dev>', to: [para],
+        subject: `Orçamento ${numero} aprovado por ${cliente}`,
+        text: `${cliente} aprovou o orçamento ${numero} pelo link.\nA ordem de serviço e as parcelas já foram criadas no sistema.\n\n${link}`,
+      }),
+    }) : Promise.resolve(),
+  ]);
+}
