@@ -106,14 +106,14 @@ export async function revisar(id: string): Promise<R> {
   return { ok: 'Nova revisão aberta. A versão anterior está no histórico.' };
 }
 
-export async function excluirOrcamento(id: string): Promise<R> {
+export async function excluirOrcamento(id: string, devolver = false): Promise<R> {
   if (!(await adminAtual())) return { erro: 'Sessão expirada.' };
   const sb = await supabaseServidor();
-  const { error } = await sb.rpc('excluir_orcamento', { p_orc: id });
+  const { error } = await sb.rpc('excluir_orcamento', { p_orc: id, p_devolver: devolver });
   if (error) {
     const m = error.message;
     if (m.includes('pagamento')) return { erro: `Não dá para excluir: ${m.replace(/^.*?tem/, 'tem')}. Desfaça o pagamento no Financeiro antes.` };
-    if (m.includes('estoque')) return { erro: `Não dá para excluir: ${m.replace(/^.*?o material/, 'o material')}.` };
+    if (m.includes('estoque')) return { erro: `Não dá para excluir: ${m.replace(/^.*?o material/, 'o material')}. Marque “devolver os materiais ao estoque” para excluir.` };
     return { erro: 'Não foi possível excluir.' };
   }
   revalidatePath('/admin', 'layout');

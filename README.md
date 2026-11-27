@@ -84,6 +84,9 @@ As funções do servidor rodam em **São Paulo** (`"regions": ["gru1"]` no `verc
 ### 8. Revisões e respostas do cliente
 No **Supabase → SQL Editor** (modo *Database*), rode `supabase/migrations/0006_revisoes.sql`.
 
+### 9. Devolver material ao estoque
+No **Supabase → SQL Editor** (modo *Database*), rode `supabase/migrations/0007_devolver_material.sql`.
+
 ## Desenvolvimento local
 
 ```bash

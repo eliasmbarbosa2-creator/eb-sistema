@@ -30,6 +30,7 @@ export default function Editor({ inicial, clientes, materiais, empresa, osNumero
   const [msg, setMsg] = useState<{ t: 'ok' | 'bad'; s: string } | null>(null);
   const [modal, setModal] = useState<'proposta' | 'enviar' | 'aprovar' | 'recusar' | 'excluir' | 'revisar' | 'versao' | null>(null);
   const [motivo, setMotivo] = useState('');
+  const [devolverMat, setDevolverMat] = useState(true);
   const [verV, setVerV] = useState<Versao | null>(null);
   const [link, setLink] = useState('');
   const [ocupado, iniciar] = useTransition();
@@ -238,9 +239,12 @@ export default function Editor({ inicial, clientes, materiais, empresa, osNumero
             {modal === 'excluir' && (<>
               <div className="mh"><h2>Excluir {o.numero}?</h2><button className="x" onClick={() => setModal(null)} aria-label="Fechar">×</button></div>
               <p>O orçamento, os itens, o histórico de revisões e as respostas do cliente serão apagados. <b>Não dá para desfazer.</b> O link do cliente deixa de funcionar.</p>
-              {o.status === 'aprovado' && <p className="banner t-warn">Este orçamento está aprovado: a ordem de serviço {osNumero} e as parcelas dela também serão excluídas. Se já houver pagamento registrado ou material retirado do estoque, a exclusão é bloqueada.</p>}
+              {o.status === 'aprovado' && <>
+                <p className="banner t-warn">Este orçamento está aprovado: a ordem de serviço {osNumero} e as parcelas dela também serão excluídas. Se houver pagamento registrado, desfaça no Financeiro antes.</p>
+                <label className="check"><input type="checkbox" checked={devolverMat} onChange={(e) => setDevolverMat(e.target.checked)} /> Se o material da {osNumero} já saiu do estoque, devolver ao estoque</label>
+              </>}
               <div className="mfoot"><button className="btn btn-g" onClick={() => setModal(null)}>Cancelar</button>
-                <button className="btn btn-p" disabled={ocupado} onClick={() => iniciar(async () => { const r = await excluirOrcamento(o.id!); if (r.erro) { setModal(null); setMsg({ t: 'bad', s: r.erro }); return; } router.push('/admin/orcamentos'); })}>Excluir definitivamente</button></div>
+                <button className="btn btn-p" disabled={ocupado} onClick={() => iniciar(async () => { const r = await excluirOrcamento(o.id!, o.status === 'aprovado' && devolverMat); if (r.erro) { setModal(null); setMsg({ t: 'bad', s: r.erro }); return; } router.push('/admin/orcamentos'); })}>Excluir definitivamente</button></div>
             </>)}
             {modal === 'revisar' && (<>
               <div className="mh"><h2>Revisar {o.numero}?</h2><button className="x" onClick={() => setModal(null)} aria-label="Fechar">×</button></div>

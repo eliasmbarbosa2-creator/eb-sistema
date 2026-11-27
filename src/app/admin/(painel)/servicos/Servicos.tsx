@@ -2,7 +2,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { mudarStatusServico, darBaixa, salvarServico, concluirSemBaixa } from './acoes';
+import { mudarStatusServico, darBaixa, salvarServico, concluirSemBaixa, devolverMaterial } from './acoes';
 import { brl, num, dataBR, fmtQtd, hojeISO, linkWhatsAppPara } from '@/lib/negocio';
 
 export type Srv = {
@@ -21,6 +21,7 @@ export default function Servicos({ lista, estoque }: { lista: Srv[]; estoque: Re
   const [falta, setFalta] = useState<{ numero: string; itens: { nome: string; precisa: number; tem: number; unidade: string }[] } | null>(null);
   const [editar, setEditar] = useState<Srv | null>(null);
   const [concluir, setConcluir] = useState<Srv | null>(null);
+  const [devolver, setDevolver] = useState<Srv | null>(null);
   const [ocupado, iniciar] = useTransition();
   const hoje = hojeISO();
 
@@ -62,7 +63,7 @@ export default function Servicos({ lista, estoque }: { lista: Srv[]; estoque: Re
                     const tem = i.material_id ? estoque[i.material_id] : undefined; const curto = !s.baixa_feita && tem !== undefined && tem < Number(i.quantidade);
                     return <li key={k}><span>{i.descricao}</span><span className={`mono ${curto ? 'short' : ''}`}>{fmtQtd(Number(i.quantidade), i.unidade)}{!s.baixa_feita && tem !== undefined && <small> / {num(tem)}</small>}</span></li>;
                   }) : <li className="sub">Sem materiais do estoque</li>}</ul>
-                  {mats.length > 0 && (s.baixa_feita ? <div className="okline">✓ Retirados do estoque</div> :
+                  {mats.length > 0 && (s.baixa_feita ? <div className="okline">✓ Retirados do estoque <button className="link" style={{ marginLeft: 6, fontWeight: 500 }} onClick={() => setDevolver(s)}>Devolver ao estoque</button></div> :
                     <button className="btn btn-s" disabled={ocupado} onClick={() => iniciar(async () => { const r = await darBaixa(s.id); if (r.falta) setFalta({ numero: s.numero, itens: r.falta }); else refrescar(r); })}>Retirar materiais do estoque</button>)}
                 </div>
                 <div><div className="eyebrow">Pagamento</div>
@@ -79,9 +80,16 @@ export default function Servicos({ lista, estoque }: { lista: Srv[]; estoque: Re
         })}</div>
       )}
 
-      {(falta || editar || concluir) && (
-        <div id="modal" onClick={(e) => { if (e.target === e.currentTarget) { setFalta(null); setEditar(null); setConcluir(null); } }}>
+      {(falta || editar || concluir || devolver) && (
+        <div id="modal" onClick={(e) => { if (e.target === e.currentTarget) { setFalta(null); setEditar(null); setConcluir(null); setDevolver(null); } }}>
           <div className="mbox" role="dialog" aria-modal="true">
+            {devolver && (<>
+              <div className="mh"><h2>Devolver materiais da {devolver.numero}?</h2><button className="x" onClick={() => setDevolver(null)} aria-label="Fechar">×</button></div>
+              <p>Os materiais retirados para este serviço <b>voltam para o estoque</b>, e a OS fica como “materiais não retirados”.</p>
+              <p className="sub">Use quando a retirada foi feita por engano ou o material não foi usado. Fica registrada no histórico do estoque como “Devolução de {devolver.numero}”.</p>
+              <div className="mfoot"><button className="btn btn-g" onClick={() => setDevolver(null)}>Cancelar</button>
+                <button className="btn btn-p" disabled={ocupado} onClick={() => iniciar(async () => { const r = await devolverMaterial(devolver.id); setDevolver(null); refrescar(r); })}>Devolver ao estoque</button></div>
+            </>)}
             {concluir && !falta && (<>
               <div className="mh"><h2>Concluir {concluir.numero}?</h2><button className="x" onClick={() => setConcluir(null)} aria-label="Fechar">×</button></div>
               <p className="banner t-warn">Os materiais deste serviço <b>ainda não foram retirados do estoque</b>. O que aconteceu?</p>

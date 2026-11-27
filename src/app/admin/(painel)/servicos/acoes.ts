@@ -46,3 +46,14 @@ export async function concluirSemBaixa(id: string): Promise<R> {
   revalidatePath('/admin', 'layout');
   return error ? { erro: 'Não foi possível concluir.' } : { ok: 'Serviço concluído. O estoque não foi alterado.' };
 }
+
+/** Devolve ao estoque os materiais retirados para a OS (desfaz a retirada). */
+export async function devolverMaterial(id: string): Promise<R> {
+  if (!(await adminAtual())) return { erro: 'Sessão expirada.' };
+  const sb = await supabaseServidor();
+  const { data, error } = await sb.rpc('devolver_material_servico', { p_servico: id });
+  if (error) return { erro: 'Não foi possível devolver os materiais.' };
+  revalidatePath('/admin', 'layout');
+  const n = (data as { devolvidos?: number })?.devolvidos ?? 0;
+  return { ok: n ? `${n} ${n === 1 ? 'material devolvido' : 'materiais devolvidos'} ao estoque.` : 'Não havia material a devolver.' };
+}
