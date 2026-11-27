@@ -1,7 +1,7 @@
 'use client';
 // Gera o PDF da proposta no navegador (mesmo layout aprovado no protótipo).
 import type { DadosProposta } from '@/components/Proposta';
-import { enderecoObra } from '@/components/Proposta';
+import { enderecoObra, numeroComRevisao } from '@/components/Proposta';
 import { brl, dataBR, diasTxt, fmtQtd, prazoTxt, condicaoTxt, totais, validoAte, type Item } from './negocio';
 
 const P = (s: unknown) => String(s ?? '').replace(/[−–—]/g, '-').replace(/→/g, '->').replace(/[“”″]/g, '"').replace(/[‘’]/g, "'").replace(/[^\x00-\xFF•]/g, '');
@@ -30,7 +30,7 @@ export async function gerarPDF(d: DadosProposta): Promise<Blob> {
   doc.text(P([E.responsavel, E.registro].filter(Boolean).join(' · ')), X, y + 5.5);
   doc.text(P([E.telefone, E.email, E.cidade].filter(Boolean).join(' · ')), X, y + 10);
   doc.setFontSize(7.5); doc.text('PROPOSTA COMERCIAL', W - MG, y - 4, { align: 'right' });
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(...INK); doc.text(P(orc.numero), W - MG, y + 2, { align: 'right' });
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(...INK); doc.text(P(numeroComRevisao(orc)), W - MG, y + 2, { align: 'right' });
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...MU);
   doc.text(`Emissão: ${dataBR(orc.data)}`, W - MG, y + 7, { align: 'right' });
   doc.text(P(`Válida até: ${dataBR(validoAte(orc))}`), W - MG, y + 11.5, { align: 'right' });
@@ -75,13 +75,13 @@ export async function gerarPDF(d: DadosProposta): Promise<Blob> {
   doc.setFontSize(9); doc.setTextColor(...INK); doc.text(P(E.responsavel || E.nome), MG, y + 5); doc.text(P(c.nome), W - MG - 75, y + 5);
   doc.setFontSize(7.5); doc.setTextColor(...MU); doc.text('Responsável técnico', MG, y + 9); doc.text('De acordo', W - MG - 75, y + 9);
   const pags = doc.getNumberOfPages();
-  for (let i = 1; i <= pags; i++) { doc.setPage(i); doc.setFontSize(7.5); doc.setTextColor(...MU); doc.text(P(`${E.nome} · ${orc.numero}`), MG, 289); doc.text(`Página ${i} de ${pags}`, W - MG, 289, { align: 'right' }); }
+  for (let i = 1; i <= pags; i++) { doc.setPage(i); doc.setFontSize(7.5); doc.setTextColor(...MU); doc.text(P(`${E.nome} · ${numeroComRevisao(orc)}`), MG, 289); doc.text(`Página ${i} de ${pags}`, W - MG, 289, { align: 'right' }); }
   return doc.output('blob');
 }
 
 export async function baixarPDF(d: DadosProposta) {
   const blob = await gerarPDF(d);
-  const nome = `Orçamento ${d.orc.numero} - ${d.cliente.nome}`.replace(/[\\/:*?"<>|]/g, '') + '.pdf';
+  const nome = `Orçamento ${d.orc.numero}${d.orc.revisao ? ` rev${d.orc.revisao}` : ''} - ${d.cliente.nome}`.replace(/[\\/:*?"<>|]/g, '') + '.pdf';
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = nome; document.body.appendChild(a); a.click();
   setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 10000);

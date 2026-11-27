@@ -81,6 +81,9 @@ No **Supabase → SQL Editor** (modo *Database*), rode `supabase/migrations/0005
 
 As funções do servidor rodam em **São Paulo** (`"regions": ["gru1"]` no `vercel.json`), perto do banco. Confira se o projeto do Supabase também está em São Paulo: *Project Settings → General → Region*.
 
+### 8. Revisões e respostas do cliente
+No **Supabase → SQL Editor** (modo *Database*), rode `supabase/migrations/0006_revisoes.sql`.
+
 ## Desenvolvimento local
 
 ```bash

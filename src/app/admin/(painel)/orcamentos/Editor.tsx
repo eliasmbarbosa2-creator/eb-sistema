@@ -2,8 +2,8 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { salvarOrcamento, marcarEnviado, aprovarAdmin, recusar, excluirRascunho } from './acoes';
-import Proposta, { type DadosProposta } from '@/components/Proposta';
+import { salvarOrcamento, marcarEnviado, aprovarAdmin, recusar, revisar, excluirOrcamento } from './acoes';
+import Proposta, { numeroComRevisao, type DadosProposta } from '@/components/Proposta';
 import { baixarPDF } from '@/lib/pdf';
 import {
   STATUS_ORC, CONDICOES, PRAZO_UN, PRAZO_INICIO, UNIDADES, brl, num, dataBR, totais, validoAte, prazoTxt, condicaoTxt, linkWhatsAppPara, type Item,
@@ -15,19 +15,26 @@ type Empresa = { nome: string; responsavel: string; registro: string; telefone: 
 export type OrcEd = {
   id?: string; numero?: string; token?: string; cliente_id: string; data: string; validade_dias: number; condicao: string; desconto: number;
   prazo_qtd: number | null; prazo_unidade: string; prazo_inicio: string; endereco_obra: string; observacoes: string; status: string; aprovado_em?: string | null; itens: Item[];
+  revisao?: number; contestacao_pendente?: boolean;
 };
+export type Versao = { id: string; revisao: number; status: string; motivo: string; criado_em: string; dados: { orcamento: Record<string, unknown>; itens: Record<string, unknown>[] } };
+export type Interacao = { id: string; revisao: number; tipo: 'aprovacao' | 'recusa' | 'contestacao'; origem: 'cliente' | 'admin'; mensagem: string; criado_em: string };
+const TIPO_INT = { aprovacao: ['Aprovou', 't-ok'], recusa: ['Recusou', 't-bad'], contestacao: ['Pediu alteração', 't-warn'] } as const;
 const DUR = /^\s*(\d+(?:[.,]\d+)?)\s*(dias?|horas?|h|semanas?)(?:\s+(úteis|uteis|útil|util|corridos?))?\s*\.?\s*$/i;
 
-export default function Editor({ inicial, clientes, materiais, empresa, osNumero }: { inicial: OrcEd; clientes: Cliente[]; materiais: Mat[]; empresa: Empresa; osNumero?: string }) {
+export default function Editor({ inicial, clientes, materiais, empresa, osNumero, versoes = [], interacoes = [] }: { inicial: OrcEd; clientes: Cliente[]; materiais: Mat[]; empresa: Empresa; osNumero?: string; versoes?: Versao[]; interacoes?: Interacao[] }) {
   const router = useRouter();
   const [o, setO] = useState<OrcEd>(inicial);
   const [sujo, setSujo] = useState(!inicial.id);
   const [matSel, setMatSel] = useState(materiais[0]?.id ?? '');
   const [msg, setMsg] = useState<{ t: 'ok' | 'bad'; s: string } | null>(null);
-  const [modal, setModal] = useState<'proposta' | 'enviar' | 'aprovar' | 'recusar' | 'excluir' | null>(null);
+  const [modal, setModal] = useState<'proposta' | 'enviar' | 'aprovar' | 'recusar' | 'excluir' | 'revisar' | 'versao' | null>(null);
+  const [motivo, setMotivo] = useState('');
+  const [verV, setVerV] = useState<Versao | null>(null);
   const [link, setLink] = useState('');
   const [ocupado, iniciar] = useTransition();
-  const bloqueado = o.status === 'aprovado' || o.status === 'recusado';
+  // Só o rascunho é editável. Enviado/recusado: use "Revisar orçamento" (a versão atual vai para o histórico).
+  const bloqueado = o.status !== 'rascunho';
 
   const mat = (id: string | null) => materiais.find((m) => m.id === id);
   const itensComCusto = o.itens.map((i) => ({ ...i, custo_unit: i.tipo === 'material' ? (mat(i.material_id)?.custo ?? i.custo_unit ?? 0) : 0 }));
@@ -38,7 +45,7 @@ export default function Editor({ inicial, clientes, materiais, empresa, osNumero
   const obsDur = DUR.exec(o.observacoes);
 
   const dados: DadosProposta | null = useMemo(() => cli && o.numero ? {
-    orc: { ...o, numero: o.numero }, itens: o.itens, empresa,
+    orc: { ...o, numero: o.numero, revisao: o.revisao }, itens: o.itens, empresa,
     cliente: { nome: cli.nome, telefone: cli.telefone, email: cli.email, documento: cli.documento, endereco: cli.endereco, cidade: cli.cidade, tipo: cli.tipo },
   } : null, [o, cli, empresa]);
 
@@ -72,11 +79,13 @@ export default function Editor({ inicial, clientes, materiais, empresa, osNumero
   return (
     <>
       <div className="ph">
-        <div><Link className="link" href="/admin/orcamentos">← Todos os orçamentos</Link><h1>{o.numero ?? 'Novo orçamento'}</h1></div>
+        <div><Link className="link" href="/admin/orcamentos">← Todos os orçamentos</Link><h1>{o.numero ? numeroComRevisao(o as { numero: string; revisao?: number }) : 'Novo orçamento'}</h1></div>
         <span className={`pill t-${STATUS_ORC[o.status][1]}`}>{STATUS_ORC[o.status][0]}</span>
       </div>
       {o.status === 'aprovado' && <div className="banner t-ok">Aprovado{o.aprovado_em ? ` em ${new Date(o.aprovado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}` : ''}. {osNumero ? <>Gerou a ordem de serviço <b>{osNumero}</b> e as parcelas no Financeiro.</> : null}</div>}
-      {o.status === 'recusado' && <div className="banner t-bad">O cliente recusou esta proposta.</div>}
+      {o.status === 'recusado' && <div className="banner t-bad">Proposta recusada{(() => { const r = [...interacoes].reverse().find((i) => i.tipo === 'recusa' && i.revisao === (o.revisao ?? 0)); return r?.mensagem ? <>: “{r.mensagem}”</> : '.'; })()} Para fazer uma nova proposta, clique em <b>Revisar orçamento</b>.</div>}
+      {o.status === 'enviado' && o.contestacao_pendente && <div className="banner t-warn"><b>O cliente pediu alteração:</b> “{[...interacoes].reverse().find((i) => i.tipo === 'contestacao')?.mensagem}”. Clique em <b>Revisar orçamento</b> para ajustar e reenviar pelo mesmo link.</div>}
+      {o.status === 'enviado' && !o.contestacao_pendente && <div className="banner t-info">Enviado ao cliente e aguardando resposta. Para alterar, use <b>Revisar orçamento</b>: a versão enviada fica guardada no histórico.</div>}
       {msg && <div className={`banner t-${msg.t}`} role="status">{msg.s}</div>}
 
       {cli ? (
@@ -167,16 +176,36 @@ export default function Editor({ inicial, clientes, materiais, empresa, osNumero
         {!bloqueado && <button className="btn" disabled={ocupado} onClick={() => salvar()}>{ocupado ? 'Salvando…' : sujo ? 'Salvar' : 'Salvo ✓'}</button>}
         <button className="btn" disabled={!dados || ocupado} onClick={() => setModal('proposta')} title={!dados ? 'Salve o orçamento primeiro' : ''}>Ver proposta</button>
         <button className="btn" disabled={!dados || ocupado || sujo} onClick={() => dados && baixarPDF(dados)} title={sujo ? 'Salve as alterações primeiro' : ''}>Baixar PDF</button>
-        {!bloqueado && <button className="btn btn-p" disabled={ocupado} onClick={enviar}>{o.status === 'enviado' ? 'Enviar de novo / copiar link' : 'Enviar ao cliente'}</button>}
-        {o.status === 'aprovado' && o.token && <button className="btn" onClick={() => { setLink(`${window.location.origin}/p/${o.token}`); setModal('enviar'); }}>Link do cliente</button>}
-        {!bloqueado && o.id && <button className="btn btn-ok" disabled={ocupado} onClick={() => setModal('aprovar')}>Cliente aprovou</button>}
-        {!bloqueado && o.id && <button className="btn btn-g" disabled={ocupado} onClick={() => setModal('recusar')}>Cliente recusou</button>}
-        {o.status === 'rascunho' && o.id && <button className="btn btn-g" disabled={ocupado} onClick={() => setModal('excluir')}>Excluir rascunho</button>}
+        {o.status === 'rascunho' && <button className="btn btn-p" disabled={ocupado} onClick={enviar}>{(o.revisao ?? 0) > 0 ? 'Enviar revisão ao cliente' : 'Enviar ao cliente'}</button>}
+        {o.status !== 'rascunho' && o.token && <button className="btn" onClick={() => { setLink(`${window.location.origin}/p/${o.token}`); setModal('enviar'); }}>Link do cliente</button>}
+        {['rascunho', 'enviado'].includes(o.status) && o.id && <button className="btn btn-ok" disabled={ocupado} onClick={() => setModal('aprovar')}>Cliente aprovou</button>}
+        {['rascunho', 'enviado'].includes(o.status) && o.id && <button className="btn btn-g" disabled={ocupado} onClick={() => { setMotivo(''); setModal('recusar'); }}>Cliente recusou</button>}
+        {['enviado', 'recusado'].includes(o.status) && <button className="btn btn-p" disabled={ocupado} onClick={() => setModal('revisar')}>Revisar orçamento</button>}
+        {o.id && <button className="btn btn-g" disabled={ocupado} onClick={() => setModal('excluir')}>Excluir</button>}
       </div>
+
+      {(interacoes.length > 0 || versoes.length > 0) && (
+        <div className="grid2">
+          <div className="card"><h2 className="h2">Respostas do cliente</h2>
+            {interacoes.length ? <ul className="todo">{[...interacoes].reverse().map((i) => (
+              <li key={i.id}><span className={`pill ${TIPO_INT[i.tipo][1]}`}>{TIPO_INT[i.tipo][0]}</span>
+                <div className="grow"><div className="sub">{new Date(i.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })} · rev. {i.revisao}{i.origem === 'admin' ? ' · registrado por você' : ' · pelo link'}</div>
+                  {i.mensagem ? <p style={{ margin: '4px 0 0', whiteSpace: 'pre-wrap' }}>“{i.mensagem}”</p> : <p className="sub" style={{ margin: '4px 0 0' }}>Sem mensagem.</p>}</div></li>
+            ))}</ul> : <p className="sub">Nenhuma resposta ainda.</p>}
+          </div>
+          <div className="card"><h2 className="h2">Histórico de versões</h2>
+            {versoes.length ? <ul className="todo">{[...versoes].reverse().map((v) => (
+              <li key={v.id}><div className="grow"><b>{v.revisao ? `Revisão ${v.revisao}` : 'Versão original'}</b> <span className={`pill t-${STATUS_ORC[v.status]?.[1] ?? 'mute'}`}>{STATUS_ORC[v.status]?.[0] ?? v.status}</span>
+                <div className="sub">guardada em {new Date(v.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}{v.motivo ? ` · motivo: “${v.motivo.slice(0, 80)}${v.motivo.length > 80 ? '…' : ''}”` : ''}</div></div>
+                <button className="btn btn-s" disabled={!cli} onClick={() => { setVerV(v); setModal('versao'); }}>Ver</button></li>
+            ))}</ul> : <p className="sub">Nenhuma versão anterior. Ao revisar, a versão atual aparece aqui.</p>}
+          </div>
+        </div>
+      )}
 
       {modal && (
         <div id="modal" onClick={(e) => e.target === e.currentTarget && setModal(null)}>
-          <div className={`mbox ${modal === 'proposta' ? 'wide' : ''}`} role="dialog" aria-modal="true">
+          <div className={`mbox ${modal === 'proposta' || modal === 'versao' ? 'wide' : ''}`} role="dialog" aria-modal="true">
             {modal === 'proposta' && dados && (<>
               <div className="mh"><h2>Proposta {o.numero}</h2><button className="x" onClick={() => setModal(null)} aria-label="Fechar">×</button></div>
               <Proposta d={dados} />
@@ -196,20 +225,42 @@ export default function Editor({ inicial, clientes, materiais, empresa, osNumero
               <p>O orçamento fica como <b>aprovado</b>, o sistema abre a <b>ordem de serviço</b> e lança as <b>parcelas</b> conforme a condição de pagamento ({CONDICOES[o.condicao]}).</p>
               {sujo && <p className="banner t-warn">As alterações ainda não salvas serão salvas antes.</p>}
               <div className="mfoot"><button className="btn btn-g" onClick={() => setModal(null)}>Cancelar</button>
-                <button className="btn btn-ok" disabled={ocupado} onClick={() => salvar(async (id) => { const r = await aprovarAdmin(id); setModal(null); if (r.erro) setMsg({ t: 'bad', s: r.erro }); else { setO((x) => ({ ...x, status: 'aprovado', aprovado_em: new Date().toISOString() })); setMsg({ t: 'ok', s: r.ok! }); } })}>Confirmar aprovação</button></div>
+                <button className="btn btn-ok" disabled={ocupado} onClick={() => { const aprovar = async (id: string) => { const r = await aprovarAdmin(id); setModal(null); if (r.erro) setMsg({ t: 'bad', s: r.erro }); else { setO((x) => ({ ...x, status: 'aprovado', aprovado_em: new Date().toISOString() })); setMsg({ t: 'ok', s: r.ok! }); router.refresh(); } };
+                  if (o.status === 'rascunho' && sujo) salvar(aprovar, false); else iniciar(() => aprovar(o.id!)); }}>Confirmar aprovação</button></div>
             </>)}
             {modal === 'recusar' && (<>
               <div className="mh"><h2>Cliente recusou?</h2><button className="x" onClick={() => setModal(null)} aria-label="Fechar">×</button></div>
-              <p>O orçamento fica como recusado e o cliente vai para “Perdido”.</p>
+              <p>O orçamento fica como recusado e o cliente vai para “Perdido”. Depois, se quiser, dá para fazer uma nova proposta em <b>Revisar orçamento</b>.</p>
+              <label className="fld"><span>Motivo (opcional)</span><textarea rows={3} value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Ex.: achou o valor alto; fechou com outro profissional" /></label>
               <div className="mfoot"><button className="btn btn-g" onClick={() => setModal(null)}>Cancelar</button>
-                <button className="btn btn-p" disabled={ocupado} onClick={() => iniciar(async () => { const r = await recusar(o.id!); setModal(null); if (r.erro) setMsg({ t: 'bad', s: r.erro }); else { setO((x) => ({ ...x, status: 'recusado' })); router.refresh(); } })}>Marcar como recusado</button></div>
+                <button className="btn btn-p" disabled={ocupado} onClick={() => iniciar(async () => { const r = await recusar(o.id!, motivo); setModal(null); if (r.erro) setMsg({ t: 'bad', s: r.erro }); else { setO((x) => ({ ...x, status: 'recusado' })); router.refresh(); } })}>Marcar como recusado</button></div>
             </>)}
             {modal === 'excluir' && (<>
-              <div className="mh"><h2>Excluir rascunho?</h2><button className="x" onClick={() => setModal(null)} aria-label="Fechar">×</button></div>
-              <p>O rascunho {o.numero} será apagado. O número não será reutilizado.</p>
+              <div className="mh"><h2>Excluir {o.numero}?</h2><button className="x" onClick={() => setModal(null)} aria-label="Fechar">×</button></div>
+              <p>O orçamento, os itens, o histórico de revisões e as respostas do cliente serão apagados. <b>Não dá para desfazer.</b> O link do cliente deixa de funcionar.</p>
+              {o.status === 'aprovado' && <p className="banner t-warn">Este orçamento está aprovado: a ordem de serviço {osNumero} e as parcelas dela também serão excluídas. Se já houver pagamento registrado ou material retirado do estoque, a exclusão é bloqueada.</p>}
               <div className="mfoot"><button className="btn btn-g" onClick={() => setModal(null)}>Cancelar</button>
-                <button className="btn btn-p" disabled={ocupado} onClick={() => iniciar(async () => { await excluirRascunho(o.id!); router.push('/admin/orcamentos'); })}>Excluir</button></div>
+                <button className="btn btn-p" disabled={ocupado} onClick={() => iniciar(async () => { const r = await excluirOrcamento(o.id!); if (r.erro) { setModal(null); setMsg({ t: 'bad', s: r.erro }); return; } router.push('/admin/orcamentos'); })}>Excluir definitivamente</button></div>
             </>)}
+            {modal === 'revisar' && (<>
+              <div className="mh"><h2>Revisar {o.numero}?</h2><button className="x" onClick={() => setModal(null)} aria-label="Fechar">×</button></div>
+              <p>A versão atual{(o.revisao ?? 0) > 0 ? ` (revisão ${o.revisao})` : ''} fica guardada no <b>histórico</b>, junto com o motivo da recusa ou do pedido de alteração. Você edita a <b>revisão {(o.revisao ?? 0) + 1}</b> e depois envia de novo <b>pelo mesmo link</b>.</p>
+              <p className="sub">Enquanto você revisa, quem abrir o link vê o aviso “orçamento em revisão”.</p>
+              <div className="mfoot"><button className="btn btn-g" onClick={() => setModal(null)}>Cancelar</button>
+                <button className="btn btn-p" disabled={ocupado} onClick={() => iniciar(async () => { const r = await revisar(o.id!); setModal(null); if (r.erro) { setMsg({ t: 'bad', s: r.erro }); return; } setO((x) => ({ ...x, status: 'rascunho', revisao: (x.revisao ?? 0) + 1, contestacao_pendente: false, aprovado_em: null })); setMsg({ t: 'ok', s: r.ok! }); router.refresh(); })}>Abrir revisão</button></div>
+            </>)}
+            {modal === 'versao' && verV && cli && (() => {
+              const vo = verV.dados.orcamento as unknown as OrcEd & { numero: string; revisao: number };
+              const vi = (verV.dados.itens as unknown as (Item & { quantidade: number; valor_unit: number })[]).map((i) => ({ ...i, quantidade: Number(i.quantidade), valor_unit: Number(i.valor_unit) }));
+              const dv: DadosProposta = { orc: { ...vo, desconto: Number(vo.desconto), validade_dias: Number(vo.validade_dias), prazo_qtd: vo.prazo_qtd == null ? null : Number(vo.prazo_qtd) }, itens: vi, empresa,
+                cliente: { nome: cli.nome, telefone: cli.telefone, email: cli.email, documento: cli.documento, endereco: cli.endereco, cidade: cli.cidade, tipo: cli.tipo } };
+              return (<>
+                <div className="mh"><h2>Versão anterior · {numeroComRevisao(vo)}</h2><button className="x" onClick={() => setModal(null)} aria-label="Fechar">×</button></div>
+                {verV.motivo && <p className="banner t-warn">Motivo: “{verV.motivo}”</p>}
+                <Proposta d={dv} />
+                <div className="mfoot"><button className="btn" onClick={() => baixarPDF(dv)}>Baixar PDF desta versão</button></div>
+              </>);
+            })()}
           </div>
         </div>
       )}

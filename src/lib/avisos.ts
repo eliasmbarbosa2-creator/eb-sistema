@@ -103,21 +103,26 @@ export async function avisarNovoPedido(p: Pedido) {
   console.log('[aviso] pedido novo:', 'e-mail', email.status === 'fulfilled' ? email.value : 'erro', '· celulares', push.status === 'fulfilled' ? push.value : 'erro');
 }
 
-/** Aviso quando o cliente aprova o orçamento pelo link. */
-export async function avisarAprovacao(numero: string, cliente: string) {
+/** Aviso de resposta do cliente pelo link (aprovação, recusa ou pedido de alteração). */
+export async function avisarRespostaCliente(tipo: 'aprovacao' | 'recusa' | 'contestacao', numero: string, cliente: string, mensagem = '') {
   const sb = supabaseServico();
   if (!sb) return;
+  const T = {
+    aprovacao: [`Orçamento aprovado: ${numero}`, `${cliente} aprovou pelo link. A OS e as parcelas já foram criadas.`],
+    recusa: [`Orçamento recusado: ${numero}`, `${cliente} recusou pelo link.`],
+    contestacao: [`Pedido de alteração: ${numero}`, `${cliente} pediu alteração antes de decidir.`],
+  }[tipo];
+  const corpo = mensagem ? `${T[1]} “${mensagem.slice(0, 120)}${mensagem.length > 120 ? '…' : ''}”` : T[1];
   const chave = process.env.RESEND_API_KEY?.trim();
   const para = await emailDoAviso(sb);
-  const link = urlDoSite() ? `${urlDoSite()}/admin/servicos` : '';
+  const link = urlDoSite() ? `${urlDoSite()}/admin/orcamentos` : '';
   await Promise.allSettled([
-    enviarPush(sb, `Orçamento aprovado: ${numero}`, `${cliente} aprovou pelo link. A OS e as parcelas já foram criadas.`, '/admin/orcamentos'),
+    enviarPush(sb, T[0], corpo, '/admin/orcamentos'),
     chave && para ? fetch('https://api.resend.com/emails', {
       method: 'POST', headers: { Authorization: `Bearer ${chave}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: process.env.AVISO_REMETENTE?.trim() || 'EB Sistema <onboarding@resend.dev>', to: [para],
-        subject: `Orçamento ${numero} aprovado por ${cliente}`,
-        text: `${cliente} aprovou o orçamento ${numero} pelo link.\nA ordem de serviço e as parcelas já foram criadas no sistema.\n\n${link}`,
+        from: process.env.AVISO_REMETENTE?.trim() || 'EB Sistema <onboarding@resend.dev>', to: [para], subject: `${T[0]} · ${cliente}`,
+        text: `${T[1]}${mensagem ? `\n\nMensagem do cliente:\n${mensagem}` : ''}\n\n${link}`,
       }),
     }) : Promise.resolve(),
   ]);

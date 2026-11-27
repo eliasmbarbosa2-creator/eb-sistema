@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import FormRecuperar from './FormRecuperar';
 
-export const metadata: Metadata = { title: 'Recuperar senha', robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: 'Recuperar senha', robots: { index: false, follow: false },
+  manifest: '/app/eb.webmanifest', icons: { apple: '/app/icone-192.png' }, appleWebApp: { capable: true, title: 'EB Sistema' } };
 
 export default async function Recuperar({ searchParams }: { searchParams: Promise<{ link?: string }> }) {
   const { link } = await searchParams;

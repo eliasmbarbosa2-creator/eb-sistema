@@ -1,11 +1,13 @@
 import { brl, dataBR, diasTxt, fmtQtd, prazoTxt, condicaoTxt, totais, validoAte, type Item, type OrcBase } from '@/lib/negocio';
 
 export type DadosProposta = {
-  orc: OrcBase & { numero: string; observacoes: string; endereco_obra: string; status: string; aprovado_em?: string | null };
+  orc: OrcBase & { numero: string; revisao?: number; observacoes: string; endereco_obra: string; status: string; aprovado_em?: string | null };
   itens: Item[];
   cliente: { nome: string; telefone: string; email: string; documento: string; endereco: string; cidade: string; tipo: string };
   empresa: { nome: string; responsavel: string; registro: string; telefone: string; email: string; cidade?: string };
 };
+
+export const numeroComRevisao = (o: { numero: string; revisao?: number }) => (o.revisao ? `${o.numero} · rev. ${o.revisao}` : o.numero);
 
 export function enderecoObra(d: DadosProposta) {
   return d.orc.endereco_obra || [d.cliente.endereco, d.cliente.cidade].filter(Boolean).join(' · ');
@@ -35,7 +37,7 @@ export default function Proposta({ d }: { d: DadosProposta }) {
           <img className="doc-logo lg-l" src="/marca/logo-claro.png" alt="" />
           <div><div className="doc-brand">{E.nome}</div><div className="sub">{[E.responsavel, E.registro].filter(Boolean).join(' · ')}</div><div className="sub">{[E.telefone, E.email].filter(Boolean).join(' · ')}</div></div>
         </div>
-        <div className="r"><div className="eyebrow">Proposta comercial</div><div className="mono big">{orc.numero}</div><div className="sub">Emissão: {dataBR(orc.data)}</div><div className="sub">Válida até: {dataBR(validoAte(orc))}</div></div>
+        <div className="r"><div className="eyebrow">Proposta comercial</div><div className="mono big">{numeroComRevisao(orc)}</div><div className="sub">Emissão: {dataBR(orc.data)}</div><div className="sub">Válida até: {dataBR(validoAte(orc))}</div></div>
       </div>
       {sec('Dados do cliente')}
       {kv([['Nome / razão social', c.nome], ['CPF / CNPJ', c.documento], ['Telefone / WhatsApp', c.telefone], ['E-mail', c.email], ['Endereço da obra', enderecoObra(d)], ['Tipo de imóvel', c.tipo]])}

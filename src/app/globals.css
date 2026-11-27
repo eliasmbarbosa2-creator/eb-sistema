@@ -571,3 +571,7 @@ html{scroll-behavior:smooth}
 .campos-f{min-width:520px}
 .campos-f td{vertical-align:middle;padding:6px 8px}
 .campos-f input:not([type=checkbox]){padding:6px 8px}
+.decidir{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.aprova.alt{border-color:var(--warn);background:var(--warn-soft)}
+.aprova.rec{border-color:var(--line);background:var(--sunk)}
+.aprova textarea{background:var(--surface)}

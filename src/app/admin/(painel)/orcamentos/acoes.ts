@@ -34,9 +34,9 @@ export async function salvarOrcamento(o: OrcIn): Promise<R> {
   let id = o.id, numero: string | undefined, token: string | undefined;
   if (id) {
     // Só altera se ainda estiver em rascunho/enviado (aprovado ou recusado fica travado).
-    const { data: atual, error } = await sb.from('orcamentos').update(linha).eq('id', id).in('status', ['rascunho', 'enviado']).select('numero,token_publico').maybeSingle();
+    const { data: atual, error } = await sb.from('orcamentos').update(linha).eq('id', id).eq('status', 'rascunho').select('numero,token_publico').maybeSingle();
     if (error) return { erro: 'Não foi possível salvar.' };
-    if (!atual) return { erro: 'Orçamento aprovado ou recusado não pode ser alterado.' };
+    if (!atual) return { erro: 'Este orçamento já foi enviado. Para alterar, use “Revisar orçamento”: a versão enviada fica guardada no histórico.' };
     numero = atual.numero; token = atual.token_publico;
   } else {
     const { data: num, error: e1 } = await sb.rpc('proximo_numero', { p_chave: 'ORC' });
@@ -85,21 +85,37 @@ export async function aprovarAdmin(id: string): Promise<R> {
   return { ok: 'Aprovado. A ordem de serviço e as parcelas foram criadas.' };
 }
 
-export async function recusar(id: string): Promise<R> {
+export async function recusar(id: string, motivo = ''): Promise<R> {
   if (!(await adminAtual())) return { erro: 'Sessão expirada.' };
   const sb = await supabaseServidor();
-  const { data: o } = await sb.from('orcamentos').select('status,cliente_id').eq('id', id).single();
+  const { data: o } = await sb.from('orcamentos').select('status,cliente_id,revisao').eq('id', id).single();
   if (!o || !['rascunho', 'enviado'].includes(o.status)) return { erro: 'Este orçamento não pode ser recusado.' };
-  await sb.from('orcamentos').update({ status: 'recusado' }).eq('id', id);
+  await sb.from('orcamentos').update({ status: 'recusado', contestacao_pendente: false }).eq('id', id);
   await sb.from('clientes').update({ status: 'perdido' }).eq('id', o.cliente_id);
+  await sb.from('orcamento_interacoes').insert({ orcamento_id: id, revisao: o.revisao, tipo: 'recusa', origem: 'admin', mensagem: motivo.trim().slice(0, 1500) });
   revalidatePath('/admin', 'layout');
   return { ok: 'Marcado como recusado.' };
 }
 
-export async function excluirRascunho(id: string): Promise<R> {
+export async function revisar(id: string): Promise<R> {
   if (!(await adminAtual())) return { erro: 'Sessão expirada.' };
   const sb = await supabaseServidor();
-  const { error } = await sb.from('orcamentos').delete().eq('id', id).eq('status', 'rascunho');
+  const { error } = await sb.rpc('revisar_orcamento', { p_orc: id });
+  if (error) return { erro: error.message.includes('só orçamentos') ? 'Só orçamentos enviados ou recusados podem ser revisados.' : 'Não foi possível abrir a revisão.' };
   revalidatePath('/admin', 'layout');
-  return error ? { erro: 'Não foi possível excluir.' } : { ok: 'Rascunho excluído.' };
+  return { ok: 'Nova revisão aberta. A versão anterior está no histórico.' };
+}
+
+export async function excluirOrcamento(id: string): Promise<R> {
+  if (!(await adminAtual())) return { erro: 'Sessão expirada.' };
+  const sb = await supabaseServidor();
+  const { error } = await sb.rpc('excluir_orcamento', { p_orc: id });
+  if (error) {
+    const m = error.message;
+    if (m.includes('pagamento')) return { erro: `Não dá para excluir: ${m.replace(/^.*?tem/, 'tem')}. Desfaça o pagamento no Financeiro antes.` };
+    if (m.includes('estoque')) return { erro: `Não dá para excluir: ${m.replace(/^.*?o material/, 'o material')}.` };
+    return { erro: 'Não foi possível excluir.' };
+  }
+  revalidatePath('/admin', 'layout');
+  return { ok: 'Orçamento excluído.' };
 }

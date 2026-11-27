@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { supabaseConfigurado } from '@/lib/supabase/config';
 import FormEntrar from './FormEntrar';
 
-export const metadata: Metadata = { title: 'Entrar', robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: 'Entrar', robots: { index: false, follow: false },
+  manifest: '/app/eb.webmanifest', icons: { apple: '/app/icone-192.png' }, appleWebApp: { capable: true, title: 'EB Sistema' } };
 
 export default function Entrar() {
   return (

@@ -16,7 +16,7 @@ export default async function PropostaCliente({ params }: { params: Promise<{ to
   const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
   const { data } = await sb.rpc('orcamento_publico', { p_token: token });
   if (!data) notFound();
-  const r = data as { orcamento: DadosProposta['orc']; itens: DadosProposta['itens']; cliente: DadosProposta['cliente']; empresa: DadosProposta['empresa'] };
+  const r = data as { orcamento: DadosProposta['orc']; itens: DadosProposta['itens']; cliente: DadosProposta['cliente']; empresa: DadosProposta['empresa']; mensagens?: { tipo: string; mensagem: string; criado_em: string }[] };
   const num = (v: unknown) => Number(v) || 0;
   const d: DadosProposta = {
     orc: { ...r.orcamento, desconto: num(r.orcamento.desconto), validade_dias: num(r.orcamento.validade_dias), prazo_qtd: r.orcamento.prazo_qtd == null ? null : num(r.orcamento.prazo_qtd) },
@@ -30,8 +30,8 @@ export default async function PropostaCliente({ params }: { params: Promise<{ to
         <a className="brand" href="/"><img className="lg-d" src="/marca/marca.png" alt="" /><img className="lg-l" src="/marca/marca-claro.png" alt="" /><span>{d.empresa.nome}</span></a>
       </div></header>
       <main className="gut prop-pg">
-        <AcoesCliente token={token} dados={d} status={d.orc.status} vencido={vencido} aprovadoEm={d.orc.aprovado_em ?? null} />
-        <Proposta d={d} />
+        <AcoesCliente token={token} dados={d} status={d.orc.status} vencido={vencido} aprovadoEm={d.orc.aprovado_em ?? null} mensagens={r.mensagens ?? []} />
+        {d.orc.status !== 'rascunho' && <Proposta d={d} />}
       </main>
     </>
   );

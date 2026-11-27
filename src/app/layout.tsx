@@ -9,6 +9,10 @@ const mono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variabl
 export const metadata: Metadata = {
   title: { default: 'EB Instalações Elétricas', template: '%s · EB Instalações Elétricas' },
   description: 'Projetos elétricos, quadros de comando e instalações elétricas residenciais, comerciais e industriais, conforme a NBR 5410.',
+  // Ícone e nome quando o site é instalado na tela do celular (o sistema tem os seus próprios).
+  manifest: '/site/eb-site.webmanifest',
+  icons: { apple: '/site/icone-180.png' },
+  appleWebApp: { capable: true, title: 'EB Elétrica', statusBarStyle: 'default' },
 };
 
 export const viewport: Viewport = {

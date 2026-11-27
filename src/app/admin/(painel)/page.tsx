@@ -11,12 +11,12 @@ export default async function Painel() {
   const hoje = hojeISO();
   const [cli, orc, par, mats, srv] = await Promise.all([
     sb.from('clientes').select('id,nome,servico,origem,status,criado_em,urgencia'),
-    sb.from('orcamentos').select('id,numero,data,desconto,status,clientes(nome),orcamento_itens(quantidade,valor_unit)').eq('status', 'enviado'),
+    sb.from('orcamentos').select('id,numero,data,desconto,status,contestacao_pendente,clientes(nome),orcamento_itens(quantidade,valor_unit)').eq('status', 'enviado'),
     sb.from('parcelas').select('id,descricao,valor,vencimento,pago,servicos(numero,clientes(nome))').eq('pago', false),
     sb.from('materiais').select('id,nome,quantidade,minimo,unidade').eq('ativo', true),
     sb.from('servicos').select('id,numero,titulo,status,inicio,clientes(nome)').neq('status', 'concluido').order('inicio'),
   ]);
-  type O = { id: string; numero: string; data: string; desconto: number; clientes: { nome: string } | null; orcamento_itens: { quantidade: number; valor_unit: number }[] };
+  type O = { id: string; numero: string; data: string; desconto: number; contestacao_pendente: boolean; clientes: { nome: string } | null; orcamento_itens: { quantidade: number; valor_unit: number }[] };
   type P = { id: string; descricao: string; valor: number; vencimento: string; servicos: { numero: string; clientes: { nome: string } | null } | null };
   type S = { id: string; numero: string; titulo: string; status: string; inicio: string | null; clientes: { nome: string } | null };
   const clientes = cli.data ?? [];
@@ -32,7 +32,8 @@ export default async function Painel() {
   const acoes: { tom: string; titulo: string; sub: string; href: string; rot: string }[] = [
     ...atrasadas.map((p) => ({ tom: 'bad', titulo: `Cobrar ${brl(Number(p.valor))} · ${p.servicos?.clientes?.nome ?? ''}`, sub: `${p.descricao} venceu em ${dataBR(p.vencimento)} (${diasEntre(p.vencimento, hoje)} dias)`, href: '/admin/financeiro', rot: 'Financeiro' })),
     ...novos.map((c) => ({ tom: ehUrgente(c.urgencia) ? 'bad' : 'info', titulo: `Responder ${c.nome}${ehUrgente(c.urgencia) ? ' · URGENTE' : ''}`, sub: `${c.servico} · pedido via ${c.origem} em ${dataBR(c.criado_em)}`, href: '/admin/clientes?status=novo', rot: 'Clientes' })),
-    ...abertos.filter((o) => diasEntre(o.data, hoje) >= 5).map((o) => ({ tom: 'warn', titulo: `Retornar sobre ${o.numero}`, sub: `${o.clientes?.nome ?? ''} · enviado há ${diasEntre(o.data, hoje)} dias · ${brl(totalOrc(o))}`, href: `/admin/orcamentos/${o.id}`, rot: 'Orçamento' })),
+    ...abertos.filter((o) => o.contestacao_pendente).map((o) => ({ tom: 'bad', titulo: `Cliente pediu alteração · ${o.numero}`, sub: `${o.clientes?.nome ?? ''} quer ajustes antes de decidir`, href: `/admin/orcamentos/${o.id}`, rot: 'Orçamento' })),
+    ...abertos.filter((o) => !o.contestacao_pendente && diasEntre(o.data, hoje) >= 5).map((o) => ({ tom: 'warn', titulo: `Retornar sobre ${o.numero}`, sub: `${o.clientes?.nome ?? ''} · enviado há ${diasEntre(o.data, hoje)} dias · ${brl(totalOrc(o))}`, href: `/admin/orcamentos/${o.id}`, rot: 'Orçamento' })),
     ...baixo.map((m) => ({ tom: 'warn', titulo: `Repor ${m.nome}`, sub: `Saldo ${num(Number(m.quantidade))} ${m.unidade} · mínimo ${num(Number(m.minimo))} ${m.unidade}`, href: '/admin/estoque', rot: 'Estoque' })),
   ];
   const ordem = ['novo', 'contato', 'orcamento', 'fechado', 'perdido'];
