@@ -76,6 +76,11 @@ O arquivo `vercel.json` agenda a rotina `/api/rotina` todo dia às 8h (horário 
 
 O backup manual fica em **Sistema → Dados da empresa → Baixar backup (Excel)**.
 
+### 7. Melhorias pós-uso
+No **Supabase → SQL Editor** (modo *Database*), rode `supabase/migrations/0005_avista.sql` (nova condição "À vista, na aprovação").
+
+As funções do servidor rodam em **São Paulo** (`"regions": ["gru1"]` no `vercel.json`), perto do banco. Confira se o projeto do Supabase também está em São Paulo: *Project Settings → General → Region*.
+
 ## Desenvolvimento local
 
 ```bash

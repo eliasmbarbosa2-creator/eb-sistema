@@ -11,10 +11,39 @@ export type ConteudoSite = {
   etapasTitulo: string; etapas: { titulo: string; texto: string }[];
   faqTitulo: string; faqTexto: string; faq: { pergunta: string; resposta: string }[];
   contatoTitulo: string; contatoTexto: string; contatoDica: string;
+  formulario: Formulario;
 };
+
+export const CAMPOS_OPCIONAIS = ['email', 'tipo', 'endereco', 'cidade', 'servico', 'urgencia', 'horario', 'mensagem'] as const;
+export type CampoOpcional = (typeof CAMPOS_OPCIONAIS)[number];
+export type Formulario = {
+  nomeRotulo: string; telefoneRotulo: string;
+  campos: Record<CampoOpcional, { mostrar: boolean; rotulo: string }>;
+  mensagemExemplo: string; outroServico: string;
+  urgencias: string[]; horarios: string[];
+  botao: string; aviso: string; sucessoTitulo: string; sucessoTexto: string;
+};
+export const FORMULARIO_PADRAO: Formulario = {
+  nomeRotulo: 'Nome', telefoneRotulo: 'Telefone / WhatsApp',
+  campos: {
+    email: { mostrar: true, rotulo: 'E-mail' }, tipo: { mostrar: true, rotulo: 'Tipo de imóvel' },
+    endereco: { mostrar: true, rotulo: 'Endereço do serviço' }, cidade: { mostrar: true, rotulo: 'Bairro / cidade' },
+    servico: { mostrar: true, rotulo: 'Serviço' }, urgencia: { mostrar: true, rotulo: 'Urgência' },
+    horario: { mostrar: true, rotulo: 'Melhor horário para contato' }, mensagem: { mostrar: true, rotulo: 'Descreva o que precisa' },
+  },
+  mensagemExemplo: 'Ex.: troca do quadro de uma casa com 2 banheiros e chuveiros de 7.500 W',
+  outroServico: 'Manutenção / outro',
+  urgencias: ['Sem pressa', 'Nas próximas semanas', 'Urgente (falta de energia ou risco)'],
+  horarios: ['Qualquer horário', 'Manhã', 'Tarde', 'Noite'],
+  botao: 'Enviar pedido de orçamento', aviso: 'Seus dados são usados só para o orçamento.',
+  sucessoTitulo: 'Pedido recebido', sucessoTexto: 'Obrigado! Retorno em até 1 dia útil para combinar a visita técnica.',
+};
+/** Opção de urgência considerada "urgente" (destaque no sistema e no aviso). */
+export const ehUrgente = (u: string) => /urgent/i.test(u || '');
 
 export const CONTEUDO_PADRAO: ConteudoSite = 
 {
+  "formulario": FORMULARIO_PADRAO,
   "heroTitulo": "Projetos, quadros de comando e instalações elétricas feitos dentro da norma",
   "heroTexto": "Técnico em eletrotécnica com atuação em projetos elétricos, montagem de quadros de comando e instalações residenciais, comerciais e industriais.",
   "garantias": [
@@ -163,7 +192,11 @@ export const CONTEUDO_PADRAO: ConteudoSite =
 
 export function mesclarConteudo(salvo: unknown): ConteudoSite {
   const s = (salvo && typeof salvo === 'object' ? salvo : {}) as Partial<ConteudoSite>;
-  return { ...CONTEUDO_PADRAO, ...s };
+  const f = (s.formulario ?? {}) as Partial<Formulario>;
+  return {
+    ...CONTEUDO_PADRAO, ...s,
+    formulario: { ...FORMULARIO_PADRAO, ...f, campos: { ...FORMULARIO_PADRAO.campos, ...(f.campos ?? {}) } },
+  };
 }
 
 /** Valida e limpa o conteúdo vindo do editor antes de gravar. */
@@ -192,5 +225,22 @@ export function limparConteudo(x: unknown, icones: string[]): ConteudoSite {
     faqTitulo: s(o.faqTitulo, 120) || P.faqTitulo, faqTexto: s(o.faqTexto, 200),
     faq: lista(o.faq, 20, (e) => (s(e.pergunta, 200) ? { pergunta: s(e.pergunta, 200), resposta: s(e.resposta, 1500) } : null)),
     contatoTitulo: s(o.contatoTitulo, 120) || P.contatoTitulo, contatoTexto: s(o.contatoTexto, 400), contatoDica: s(o.contatoDica, 300),
+    formulario: limparFormulario(o.formulario),
   };
+  function limparFormulario(v: unknown): Formulario {
+    const F = FORMULARIO_PADRAO, f = (v && typeof v === 'object' ? v : {}) as Record<string, unknown>;
+    const c = (f.campos && typeof f.campos === 'object' ? f.campos : {}) as Record<string, Record<string, unknown>>;
+    const opcoes = (x: unknown, p: string[]) => { const l = (Array.isArray(x) ? x : []).map((i) => s(i, 60)).filter(Boolean).slice(0, 8); return l.length ? l : p; };
+    return {
+      nomeRotulo: s(f.nomeRotulo, 60) || F.nomeRotulo, telefoneRotulo: s(f.telefoneRotulo, 60) || F.telefoneRotulo,
+      campos: Object.fromEntries(CAMPOS_OPCIONAIS.map((k) => [k, {
+        mostrar: typeof c[k]?.mostrar === 'boolean' ? (c[k].mostrar as boolean) : F.campos[k].mostrar,
+        rotulo: s(c[k]?.rotulo, 60) || F.campos[k].rotulo,
+      }])) as Formulario['campos'],
+      mensagemExemplo: s(f.mensagemExemplo, 160), outroServico: s(f.outroServico, 60),
+      urgencias: opcoes(f.urgencias, F.urgencias), horarios: opcoes(f.horarios, F.horarios),
+      botao: s(f.botao, 50) || F.botao, aviso: s(f.aviso, 160),
+      sucessoTitulo: s(f.sucessoTitulo, 60) || F.sucessoTitulo, sucessoTexto: s(f.sucessoTexto, 300) || F.sucessoTexto,
+    };
+  }
 }

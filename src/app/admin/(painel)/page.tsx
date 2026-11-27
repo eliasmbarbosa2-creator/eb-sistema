@@ -4,6 +4,7 @@ import { chavePublicaVapid } from '@/lib/avisos';
 import { brl, dataBR, diasEntre, hojeISO, num } from '@/lib/negocio';
 import { STATUS_CLIENTE } from '@/lib/rotulos';
 import Avisos from './Avisos';
+import { ehUrgente } from '@/lib/conteudo';
 
 export default async function Painel() {
   const sb = await supabaseServidor();
@@ -30,7 +31,7 @@ export default async function Painel() {
 
   const acoes: { tom: string; titulo: string; sub: string; href: string; rot: string }[] = [
     ...atrasadas.map((p) => ({ tom: 'bad', titulo: `Cobrar ${brl(Number(p.valor))} · ${p.servicos?.clientes?.nome ?? ''}`, sub: `${p.descricao} venceu em ${dataBR(p.vencimento)} (${diasEntre(p.vencimento, hoje)} dias)`, href: '/admin/financeiro', rot: 'Financeiro' })),
-    ...novos.map((c) => ({ tom: /^Urgente/.test(c.urgencia) ? 'bad' : 'info', titulo: `Responder ${c.nome}${/^Urgente/.test(c.urgencia) ? ' · URGENTE' : ''}`, sub: `${c.servico} · pedido via ${c.origem} em ${dataBR(c.criado_em)}`, href: '/admin/clientes?status=novo', rot: 'Clientes' })),
+    ...novos.map((c) => ({ tom: ehUrgente(c.urgencia) ? 'bad' : 'info', titulo: `Responder ${c.nome}${ehUrgente(c.urgencia) ? ' · URGENTE' : ''}`, sub: `${c.servico} · pedido via ${c.origem} em ${dataBR(c.criado_em)}`, href: '/admin/clientes?status=novo', rot: 'Clientes' })),
     ...abertos.filter((o) => diasEntre(o.data, hoje) >= 5).map((o) => ({ tom: 'warn', titulo: `Retornar sobre ${o.numero}`, sub: `${o.clientes?.nome ?? ''} · enviado há ${diasEntre(o.data, hoje)} dias · ${brl(totalOrc(o))}`, href: `/admin/orcamentos/${o.id}`, rot: 'Orçamento' })),
     ...baixo.map((m) => ({ tom: 'warn', titulo: `Repor ${m.nome}`, sub: `Saldo ${num(Number(m.quantidade))} ${m.unidade} · mínimo ${num(Number(m.minimo))} ${m.unidade}`, href: '/admin/estoque', rot: 'Estoque' })),
   ];

@@ -8,7 +8,7 @@ import Portfolio from '@/components/Portfolio';
 
 /** O site público inteiro. Usado na página inicial e na pré-visualização do sistema. */
 export default function SitePublico({ empresa: E, conteudo: T, trabalhos, previa }: { empresa: Empresa; conteudo: ConteudoSite; trabalhos: Trabalho[]; previa?: React.ReactNode }) {
-  const opcoes = [...T.servicos.map((s) => s.nome || s.titulo).filter(Boolean), 'Manutenção / outro'];
+  const opcoes = [...T.servicos.map((s) => s.nome || s.titulo).filter(Boolean), ...(T.formulario.outroServico ? [T.formulario.outroServico] : [])];
   const fotos = Object.fromEntries(trabalhos.map((t) => [t.id, t.fotos.map(urlFoto)]));
   const servicoPorCategoria = Object.fromEntries(T.servicos.map((s) => [s.titulo, s.nome || s.titulo]));
   const curto = E.nome.split(' ')[0];
@@ -65,6 +65,7 @@ export default function SitePublico({ empresa: E, conteudo: T, trabalhos, previa
             <div><div className="eyebrow ac-t">Serviços</div><h2>{T.servicosTitulo}</h2></div>
             <p>{T.servicosTexto}{E.regiao ? ` Região atendida: ${E.regiao}.` : ''}</p>
           </div>
+          <p className="deslize" aria-hidden="true">Deslize para ver todos →</p>
           <div className="svc">
             {T.servicos.map((s, i) => (
               <div className="card" key={i}>
@@ -91,6 +92,7 @@ export default function SitePublico({ empresa: E, conteudo: T, trabalhos, previa
         {trabalhos.length > 0 && (
           <section className="sec gut" id="trabalhos">
             <div className="sec-h"><div><div className="eyebrow ac-t">Portfólio</div><h2>{T.trabalhosTitulo}</h2></div></div>
+            <p className="deslize" aria-hidden="true">Deslize para ver os trabalhos →</p>
             <Portfolio trabalhos={trabalhos} fotos={fotos} servicoPorCategoria={servicoPorCategoria} />
           </section>
         )}
@@ -98,6 +100,7 @@ export default function SitePublico({ empresa: E, conteudo: T, trabalhos, previa
         {T.diferenciais.length > 0 && (
           <section className="sec gut">
             <div className="sec-h"><div><div className="eyebrow ac-t">Diferenciais</div><h2>{T.difTitulo}</h2></div></div>
+            <p className="deslize" aria-hidden="true">Deslize para ver todos →</p>
             <div className="why">
               {T.diferenciais.map((w, i) => (
                 <div key={i}><span className="ico"><Icone nome={w.icone} /></span><h3>{w.titulo}</h3><p>{w.texto}</p></div>
@@ -145,7 +148,7 @@ export default function SitePublico({ empresa: E, conteudo: T, trabalhos, previa
               {T.contatoDica && <p className="tip">{T.contatoDica}</p>}
             </div>
             <div className="card cform">
-              <FormPedido servicos={opcoes} />
+              <FormPedido servicos={opcoes} form={T.formulario} />
             </div>
           </div>
         </section>
@@ -162,6 +165,10 @@ export default function SitePublico({ empresa: E, conteudo: T, trabalhos, previa
         </div>
         <div className="foot-b">© {new Date().getFullYear()} {E.nome}</div>
       </footer>
+      <div className="barra-movel">
+        <a className="btn btn-p" href="#contato">Pedir orçamento</a>
+        {wa && <a className="btn btn-wa" href={wa} target="_blank" rel="noopener"><Icone nome="wa" tamanho={18} /> WhatsApp</a>}
+      </div>
       {wa && <a className="wa-fab" href={wa} target="_blank" rel="noopener" aria-label="Chamar no WhatsApp"><Icone nome="wa" /><span>WhatsApp</span></a>}
     </>
   );

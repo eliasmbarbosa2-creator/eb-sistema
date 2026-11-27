@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { adminAtual, supabaseServidor } from '@/lib/supabase/server';
@@ -19,9 +20,9 @@ export default async function LayoutAdmin({ children }: { children: React.ReactN
   const user = await adminAtual();
   if (!user) redirect('/admin/entrar');
   const supabase = await supabaseServidor();
-  const { data: empresa } = await supabase.from('empresa').select('nome').eq('id', 1).maybeSingle();
   const hoje = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
-  const [{ count: novos }, { count: atrasadas }, { data: mats }] = await Promise.all([
+  const [{ data: empresa }, { count: novos }, { count: atrasadas }, { data: mats }] = await Promise.all([
+    supabase.from('empresa').select('nome').eq('id', 1).maybeSingle(),
     supabase.from('clientes').select('id', { count: 'exact', head: true }).eq('status', 'novo'),
     supabase.from('parcelas').select('id', { count: 'exact', head: true }).eq('pago', false).lt('vencimento', hoje),
     supabase.from('materiais').select('quantidade,minimo').eq('ativo', true).gt('minimo', 0),
@@ -32,14 +33,14 @@ export default async function LayoutAdmin({ children }: { children: React.ReactN
     <>
       <header className="top">
         <div className="top-in gut">
-          <a className="brand" href="/admin">
+          <Link className="brand" href="/admin">
             <img className="lg-d" src="/marca/marca.png" alt="" />
             <img className="lg-l" src="/marca/marca-claro.png" alt="" />
             <span>{empresa?.nome ?? 'EB Instalações Elétricas'}</span>
-          </a>
+          </Link>
           <nav className="mode" aria-label="Alternar área">
             <a href="/" target="_blank" rel="noopener">Ver site</a>
-            <a href="/admin" className="on">Sistema</a>
+            <Link href="/admin" className="on">Sistema</Link>
           </nav>
           <form action={sair}><button className="btn btn-s btn-g" type="submit">Sair</button></form>
         </div>

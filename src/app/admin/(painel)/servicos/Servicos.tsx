@@ -2,7 +2,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { mudarStatusServico, darBaixa, salvarServico } from './acoes';
+import { mudarStatusServico, darBaixa, salvarServico, concluirSemBaixa } from './acoes';
 import { brl, num, dataBR, fmtQtd, hojeISO, linkWhatsAppPara } from '@/lib/negocio';
 
 export type Srv = {
@@ -20,6 +20,7 @@ export default function Servicos({ lista, estoque }: { lista: Srv[]; estoque: Re
   const [msg, setMsg] = useState<{ t: 'ok' | 'bad' | 'warn'; s: string } | null>(null);
   const [falta, setFalta] = useState<{ numero: string; itens: { nome: string; precisa: number; tem: number; unidade: string }[] } | null>(null);
   const [editar, setEditar] = useState<Srv | null>(null);
+  const [concluir, setConcluir] = useState<Srv | null>(null);
   const [ocupado, iniciar] = useTransition();
   const hoje = hojeISO();
 
@@ -51,8 +52,8 @@ export default function Servicos({ lista, estoque }: { lista: Srv[]; estoque: Re
               <div className="stepper" role="group" aria-label="Status do serviço">
                 {ETAPAS.map(([k, l], i) => (
                   <button key={k} className={`stp ${i < idx ? 'done' : ''} ${i === idx ? 'cur' : ''}`} aria-pressed={i === idx} disabled={ocupado}
-                    onClick={() => iniciar(async () => { const r = await mudarStatusServico(s.id, k); refrescar(r);
-                      if (!r.erro && k === 'execucao' && !s.baixa_feita && mats.length) setMsg({ t: 'warn', s: `${s.numero} em execução. Lembre de retirar os materiais do estoque.` }); })}>{l}</button>
+                    onClick={() => { if (k === 'concluido' && !s.baixa_feita && mats.length) { setConcluir(s); return; } iniciar(async () => { const r = await mudarStatusServico(s.id, k); refrescar(r);
+                      if (!r.erro && k === 'execucao' && !s.baixa_feita && mats.length) setMsg({ t: 'warn', s: `${s.numero} em execução. Lembre de retirar os materiais do estoque.` }); }); }}>{l}</button>
                 ))}
               </div>
               <div className="srv-b">
@@ -78,9 +79,25 @@ export default function Servicos({ lista, estoque }: { lista: Srv[]; estoque: Re
         })}</div>
       )}
 
-      {(falta || editar) && (
-        <div id="modal" onClick={(e) => { if (e.target === e.currentTarget) { setFalta(null); setEditar(null); } }}>
+      {(falta || editar || concluir) && (
+        <div id="modal" onClick={(e) => { if (e.target === e.currentTarget) { setFalta(null); setEditar(null); setConcluir(null); } }}>
           <div className="mbox" role="dialog" aria-modal="true">
+            {concluir && !falta && (<>
+              <div className="mh"><h2>Concluir {concluir.numero}?</h2><button className="x" onClick={() => setConcluir(null)} aria-label="Fechar">×</button></div>
+              <p className="banner t-warn">Os materiais deste serviço <b>ainda não foram retirados do estoque</b>. O que aconteceu?</p>
+              <div className="escolhas">
+                <button className="btn btn-p" disabled={ocupado} onClick={() => iniciar(async () => {
+                  const b = await darBaixa(concluir.id);
+                  if (b.falta) { setFalta({ numero: concluir.numero, itens: b.falta }); setConcluir(null); return; }
+                  if (b.erro) { refrescar(b); return; }
+                  const r = await mudarStatusServico(concluir.id, 'concluido'); setConcluir(null); refrescar(r.erro ? r : { ok: 'Materiais retirados do estoque e serviço concluído.' }); })}>
+                  <b>Usei os materiais:</b> retirar do estoque e concluir</button>
+                <button className="btn" disabled={ocupado} onClick={() => iniciar(async () => { const r = await concluirSemBaixa(concluir.id); setConcluir(null); refrescar(r); })}>
+                  <b>Os materiais não saíram do estoque:</b> concluir sem alterar o estoque</button>
+                <button className="btn btn-g" onClick={() => setConcluir(null)}>Cancelar</button>
+              </div>
+              <p className="sub">Se escolher concluir sem alterar o estoque, isso fica registrado nas anotações da OS.</p>
+            </>)}
             {falta && (<>
               <div className="mh"><h2>Estoque insuficiente</h2><button className="x" onClick={() => setFalta(null)} aria-label="Fechar">×</button></div>
               <p>Para {falta.numero} faltam os materiais abaixo. Nada foi retirado.</p>

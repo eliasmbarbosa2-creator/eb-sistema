@@ -28,7 +28,8 @@ export const STATUS_ORC: Record<string, [string, string]> = {
   rascunho: ['Rascunho', 'mute'], enviado: ['Enviado', 'info'], aprovado: ['Aprovado', 'ok'], recusado: ['Recusado', 'bad'],
 };
 export const CONDICOES: Record<string, string> = {
-  avista: 'À vista, 15 dias após a conclusão',
+  avista_ato: 'À vista, na aprovação do orçamento',
+  avista: 'À vista em até 15 dias após a conclusão',
   entrada50: '50% de entrada + 50% na entrega',
   p3x: '3 parcelas mensais (entrada, 30 e 60 dias)',
 };
@@ -58,6 +59,7 @@ export function prazoTxt(o: OrcBase) {
   return 'A combinar com o cliente';
 }
 export function condicaoTxt(o: OrcBase, total: number) {
+  if (o.condicao === 'avista_ato') return `À vista: ${brl(total)} na aprovação do orçamento`;
   if (o.condicao === 'avista') return `À vista: ${brl(total)} em até 15 dias após a conclusão do serviço`;
   if (o.condicao === 'entrada50') { const a = r2(total / 2); return `Entrada de ${brl(a)} na aprovação + ${brl(r2(total - a))} na entrega do serviço`; }
   const a = r2(total / 3); return `3 parcelas: ${brl(a)} na aprovação, ${brl(a)} em 30 dias e ${brl(r2(total - 2 * a))} em 60 dias`;

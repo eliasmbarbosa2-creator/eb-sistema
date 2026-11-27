@@ -3,12 +3,11 @@ import { after } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY, supabaseConfigurado } from '@/lib/supabase/config';
 import { avisarNovoPedido } from '@/lib/avisos';
+import { mesclarConteudo } from '@/lib/conteudo';
 
 export type EstadoPedido = { ok?: boolean; erro?: string; campo?: string };
 
 const TIPOS = ['Residencial', 'Comercial', 'Industrial'];
-const URGENCIAS = ['Sem pressa', 'Nas próximas semanas', 'Urgente (falta de energia ou risco)'];
-const HORARIOS = ['Qualquer horário', 'Manhã', 'Tarde', 'Noite'];
 const txt = (f: FormData, k: string, max: number) => String(f.get(k) ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
 
 export async function enviarPedido(_: EstadoPedido, f: FormData): Promise<EstadoPedido> {
@@ -29,22 +28,27 @@ export async function enviarPedido(_: EstadoPedido, f: FormData): Promise<Estado
   if (telefone.replace(/\D/g, '').length < 10) return { erro: 'Informe um telefone com DDD.', campo: 'telefone' };
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { erro: 'Confira o e-mail.', campo: 'email' };
 
+  if (!supabaseConfigurado) return { erro: 'O formulário está temporariamente indisponível. Fale pelo WhatsApp.' };
+  const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
+  // As opções válidas de urgência e horário são as que estão publicadas em "Conteúdo do site".
+  const { data: site } = await sb.from('site_publico').select('conteudo').maybeSingle();
+  const F = mesclarConteudo(site?.conteudo).formulario;
+  const escolha = (k: string, lista: string[]) => (lista.includes(txt(f, k, 60)) ? txt(f, k, 60) : '');
+
   const pedido = {
     nome, telefone, email,
     tipo: TIPOS.includes(txt(f, 'tipo', 20)) ? txt(f, 'tipo', 20) : 'Residencial',
     endereco: txt(f, 'endereco', 200),
     cidade: txt(f, 'cidade', 120),
     servico: txt(f, 'servico', 120) || 'Não informado',
-    urgencia: URGENCIAS.includes(txt(f, 'urgencia', 60)) ? txt(f, 'urgencia', 60) : '',
-    horario: HORARIOS.includes(txt(f, 'horario', 60)) ? txt(f, 'horario', 60) : '',
+    urgencia: F.campos.urgencia.mostrar ? escolha('urgencia', F.urgencias) : '',
+    horario: F.campos.horario.mostrar ? escolha('horario', F.horarios) : '',
     mensagem,
     origem: 'Site',
     status: 'novo',
   };
 
-  if (!supabaseConfigurado) return { erro: 'O formulário está temporariamente indisponível. Fale pelo WhatsApp.' };
   // Grava como visitante: as regras do banco só permitem CRIAR pedidos, nunca ler.
-  const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
   const { error } = await sb.from('clientes').insert(pedido);
   if (error) {
     console.error('[pedido] erro ao gravar:', error.message);

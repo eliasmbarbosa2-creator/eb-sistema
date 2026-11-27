@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const ITENS: { href: string; rotulo: string; pronto: boolean }[] = [
@@ -22,10 +23,10 @@ export default function Menu({ novos, atrasadas, baixo }: { novos: number; atras
         <span key={i.href} style={{ display: 'contents' }}>
           {n === 6 && <div className="sep" />}
           {i.pronto ? (
-            <a href={i.href} className={(i.href === '/admin' ? atual === i.href : atual.startsWith(i.href)) ? 'on' : ''}>
+            <Link href={i.href} prefetch className={(i.href === '/admin' ? atual === i.href : atual.startsWith(i.href)) ? 'on' : ''}>
               <span>{i.rotulo}</span>
               {badge[i.href]?.[0] > 0 && <span className={`badge ${badge[i.href][1]}`}>{badge[i.href][0]}</span>}
-            </a>
+            </Link>
           ) : (
             <a aria-disabled="true" className="soon" title="Chega na próxima etapa"><span>{i.rotulo}</span><span className="pill t-mute">em breve</span></a>
           )}

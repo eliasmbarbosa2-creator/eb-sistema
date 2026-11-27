@@ -465,3 +465,109 @@ html{scroll-behavior:smooth}
 .tbl th.r{text-align:right}
 .rowact{flex-wrap:wrap}
 .pvbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding-block:10px;background:var(--warn-soft);color:var(--warn);font-size:.9rem;position:sticky;top:0;z-index:25}
+/* carregamento */
+.carregando{display:flex;flex-direction:column;gap:14px}
+.sk{background:linear-gradient(90deg,var(--sunk) 0%,var(--surface) 50%,var(--sunk) 100%);background-size:200% 100%;border-radius:var(--r);min-height:84px}
+.sk-h{min-height:44px;max-width:280px}
+.sk-card{min-height:180px}
+.sk-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:1000px){.sk-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (prefers-reduced-motion:no-preference){.sk{animation:sk 1.2s ease-in-out infinite}@keyframes sk{from{background-position:200% 0}to{background-position:-200% 0}}}
+
+/* ============================================================
+   SITE NO CELULAR (até 640 px). Nada disto afeta o computador.
+   ============================================================ */
+.deslize,.barra-movel{display:none}
+@media (max-width:640px){
+  /* abertura mais curta: a logo grande já aparece no topo */
+  .hero-in{padding-block:26px 30px;gap:0}
+  .hero-logo{display:none}
+  .hero h1{font-size:2rem;margin:8px 0 10px}
+  .hero p{font-size:.95rem}
+  .hero-cta{margin-top:18px}
+  .hero-cta .btn{flex:1 1 auto}
+  .trust{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;margin-top:20px;padding-top:16px}
+  .trust div{font-size:.8rem;gap:6px;align-items:flex-start}
+  .trust svg{width:18px;height:18px}
+
+  /* seções mais próximas */
+  .sec{padding-block:40px 0;scroll-margin-top:64px}
+  .sec-h{margin-bottom:12px;gap:6px}
+  .sec-h h2,.faq-h{font-size:1.65rem}
+  .sec-h p{font-size:.9rem}
+
+  /* cartões viram carrossel deslizante (em vez de uma pilha enorme) */
+  .deslize{display:block;font-size:.78rem;color:var(--muted);margin:0 0 8px}
+  .svc,.why,.pfgrid{display:grid;grid-auto-flow:column;grid-template-columns:none;grid-auto-columns:84%;gap:12px;
+    overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;
+    margin-inline:calc(-1 * max(16px, env(safe-area-inset-left, 0px)));padding-inline:max(16px, env(safe-area-inset-left, 0px));
+    scroll-padding-inline:max(16px, env(safe-area-inset-left, 0px));padding-bottom:6px;scrollbar-width:none}
+  .svc::-webkit-scrollbar,.why::-webkit-scrollbar,.pfgrid::-webkit-scrollbar{display:none}
+  .svc>*,.why>*,.pfgrid>*{scroll-snap-align:start}
+  .svc .card{padding:18px}
+  .why>div{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+
+  /* tipos de cliente e etapas compactos */
+  .segs{grid-template-columns:minmax(0,1fr)!important;margin-top:14px}
+  .seg{padding:12px 14px}
+  .seg p{font-size:.82rem}
+  .steps{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .step{padding:14px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .step:nth-child(2n){border-right:0}
+  .step h3{font-size:1.05rem}
+  .step p{font-size:.82rem}
+
+  /* perguntas e contato */
+  .faqw{gap:10px}
+  .faq details{padding:13px 0}
+  .contact{gap:14px}
+  .cpanel{padding:20px;gap:10px}
+  .cpanel h2{font-size:1.6rem}
+  .cpanel .btn-wa{display:none}
+  .cform{padding:16px}
+
+  /* rodapé curto */
+  .foot{margin-top:48px;padding-block:24px calc(84px + env(safe-area-inset-bottom,0px))}
+  .foot-in{gap:14px}
+  .foot-in .fcol:nth-child(2){display:none}
+
+  /* barra fixa no rodapé da tela com as duas ações principais */
+  .wa-fab{display:none}
+  .barra-movel{display:flex;gap:8px;position:fixed;left:0;right:0;bottom:0;z-index:15;
+    padding:10px max(12px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+    background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.08)}
+  .barra-movel .btn{flex:1;padding:11px 12px;font-size:.95rem}
+}
+
+/* ============================================================
+   SISTEMA NO CELULAR (até 640 px). Nada disto afeta o computador.
+   ============================================================ */
+@media (max-width:640px){
+  .app{padding-block:0 40px;gap:10px}
+  .side nav{position:sticky;top:calc(env(safe-area-inset-top,0px) + 52px);z-index:6;background:var(--bg);padding-block:8px;
+    margin-inline:calc(-1 * max(16px, env(safe-area-inset-left, 0px)));padding-inline:max(16px, env(safe-area-inset-left, 0px));scrollbar-width:none}
+  .side nav::-webkit-scrollbar{display:none}
+  .side a{padding:7px 11px;font-size:.88rem}
+  .top-in{padding-block:8px}
+  .brand{font-size:1.15rem}
+  .brand img{height:26px}
+  .main{gap:12px}
+  .ph h1{font-size:1.6rem}
+  .ph .lead{font-size:.85rem}
+  .tiles{gap:8px}
+  .tile{padding:10px 12px}
+  .tile .v{font-size:1.4rem}
+  .tile .sub{font-size:.75rem}
+  .card{padding:14px}
+  .grid2{gap:12px}
+  #modal{padding:calc(env(safe-area-inset-top,0px) + 10px) 8px 10px}
+  .mbox{padding:16px;gap:12px;border-radius:12px}
+  .mbox .mh h2{font-size:1.3rem}
+  .srv-h h3{font-size:1.15rem}
+  .actions .btn{flex:1 1 auto}
+}
+.escolhas{display:flex;flex-direction:column;gap:8px}
+.escolhas .btn{white-space:normal;justify-content:flex-start;text-align:left;padding:12px 14px;line-height:1.35}
+.campos-f{min-width:520px}
+.campos-f td{vertical-align:middle;padding:6px 8px}
+.campos-f input:not([type=checkbox]){padding:6px 8px}

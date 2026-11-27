@@ -31,18 +31,19 @@ export async function salvarOrcamento(o: OrcIn): Promise<R> {
     observacoes: o.observacoes.trim().slice(0, 3000),
   };
 
-  let id = o.id, numero: string | undefined;
+  let id = o.id, numero: string | undefined, token: string | undefined;
   if (id) {
-    const { data: atual } = await sb.from('orcamentos').select('status').eq('id', id).single();
-    if (!atual || !['rascunho', 'enviado'].includes(atual.status)) return { erro: 'Orçamento aprovado ou recusado não pode ser alterado.' };
-    const { error } = await sb.from('orcamentos').update(linha).eq('id', id);
+    // Só altera se ainda estiver em rascunho/enviado (aprovado ou recusado fica travado).
+    const { data: atual, error } = await sb.from('orcamentos').update(linha).eq('id', id).in('status', ['rascunho', 'enviado']).select('numero,token_publico').maybeSingle();
     if (error) return { erro: 'Não foi possível salvar.' };
+    if (!atual) return { erro: 'Orçamento aprovado ou recusado não pode ser alterado.' };
+    numero = atual.numero; token = atual.token_publico;
   } else {
     const { data: num, error: e1 } = await sb.rpc('proximo_numero', { p_chave: 'ORC' });
     if (e1 || !num) return { erro: 'Não foi possível numerar o orçamento.' };
-    const { data, error } = await sb.from('orcamentos').insert({ ...linha, numero: num, status: 'rascunho' }).select('id,numero').single();
+    const { data, error } = await sb.from('orcamentos').insert({ ...linha, numero: num, status: 'rascunho' }).select('id,numero,token_publico').single();
     if (error || !data) return { erro: 'Não foi possível salvar.' };
-    id = data.id; numero = data.numero;
+    id = data.id; numero = data.numero; token = data.token_publico;
   }
 
   // Custo dos materiais vem do banco (não do navegador), para o cálculo de lucro ser confiável.
@@ -59,7 +60,7 @@ export async function salvarOrcamento(o: OrcIn): Promise<R> {
   })));
   if (eI) return { erro: 'Os itens não foram salvos. Tente de novo.' };
   revalidatePath('/admin', 'layout');
-  return { ok: 'Orçamento salvo.', id, numero };
+  return { ok: 'Orçamento salvo.', id, numero, token };
 }
 
 export async function marcarEnviado(id: string): Promise<R> {

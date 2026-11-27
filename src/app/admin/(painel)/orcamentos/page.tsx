@@ -18,9 +18,9 @@ export default async function Orcamentos({ searchParams }: { searchParams: Promi
       <div className="ph"><div><h1>Orçamentos</h1><p className="lead">Monte a proposta com mão de obra e materiais do estoque</p></div><Link className="btn btn-p" href="/admin/orcamentos/novo">+ Novo orçamento</Link></div>
       <div className="chips">
         {['todos', ...Object.keys(STATUS_ORC)].map((k) => (
-          <a key={k} href={k === 'todos' ? '/admin/orcamentos' : `/admin/orcamentos?status=${k}`} className={`chip ${status === k ? 'on' : ''}`} style={{ textDecoration: 'none' }}>
+          <Link key={k} href={k === 'todos' ? '/admin/orcamentos' : `/admin/orcamentos?status=${k}`} className={`chip ${status === k ? 'on' : ''}`} style={{ textDecoration: 'none' }}>
             {k === 'todos' ? 'Todos' : STATUS_ORC[k][0]} <span>{k === 'todos' ? todos.length : todos.filter((o) => o.status === k).length}</span>
-          </a>
+          </Link>
         ))}
       </div>
       <div className="card">

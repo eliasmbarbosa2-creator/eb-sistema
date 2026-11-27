@@ -1,7 +1,9 @@
+import Link from 'next/link';
 import { supabaseServidor } from '@/lib/supabase/server';
 import { STATUS_CLIENTE, dataHoraBR } from '@/lib/rotulos';
 import StatusCliente from './StatusCliente';
 import NovoCliente from './NovoCliente';
+import { ehUrgente } from '@/lib/conteudo';
 
 type Cliente = {
   id: string; nome: string; telefone: string; email: string; documento: string; endereco: string; cidade: string; tipo: string;
@@ -24,9 +26,9 @@ export default async function Clientes({ searchParams }: { searchParams: Promise
       </div>
       <div className="chips">
         {['todos', ...Object.keys(STATUS_CLIENTE)].map((k) => (
-          <a key={k} href={k === 'todos' ? '/admin/clientes' : `/admin/clientes?status=${k}`} className={`chip ${status === k ? 'on' : ''}`} style={{ textDecoration: 'none' }}>
+          <Link key={k} href={k === 'todos' ? '/admin/clientes' : `/admin/clientes?status=${k}`} className={`chip ${status === k ? 'on' : ''}`} style={{ textDecoration: 'none' }}>
             {k === 'todos' ? 'Todos' : STATUS_CLIENTE[k][0]} <span>{k === 'todos' ? todos.length : todos.filter((c) => c.status === k).length}</span>
-          </a>
+          </Link>
         ))}
       </div>
       {lista.length === 0 ? (
@@ -41,7 +43,7 @@ export default async function Clientes({ searchParams }: { searchParams: Promise
                   <span className="sub">{c.servico} · {c.tipo}{c.cidade ? ` · ${c.cidade}` : ''}</span>
                 </div>
                 <div className="cc-side">
-                  {/^Urgente/.test(c.urgencia) && <span className="pill t-bad">Urgente</span>}
+                  {ehUrgente(c.urgencia) && <span className="pill t-bad">Urgente</span>}
                   <span className="sub mono">{dataHoraBR(c.criado_em)}</span>
                   <StatusCliente id={c.id} status={c.status} />
                 </div>

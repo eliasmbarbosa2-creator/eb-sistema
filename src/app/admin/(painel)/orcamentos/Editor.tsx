@@ -42,22 +42,29 @@ export default function Editor({ inicial, clientes, materiais, empresa, osNumero
     cliente: { nome: cli.nome, telefone: cli.telefone, email: cli.email, documento: cli.documento, endereco: cli.endereco, cidade: cli.cidade, tipo: cli.tipo },
   } : null, [o, cli, empresa]);
 
-  const salvar = (depois?: (id: string) => Promise<void> | void) => iniciar(async () => {
+  const salvar = (depois?: (id: string, token?: string) => Promise<void> | void, atualizar = true) => iniciar(async () => {
     setMsg(null);
     const r = await salvarOrcamento({ ...o, itens: o.itens });
     if (r.erro) { setMsg({ t: 'bad', s: r.erro }); return; }
     setSujo(false);
-    if (!o.id && r.id) { setO((x) => ({ ...x, id: r.id, numero: r.numero })); window.history.replaceState(null, '', `/admin/orcamentos/${r.id}`); }
-    if (depois && r.id) await depois(r.id); else setMsg({ t: 'ok', s: r.ok ?? 'Salvo.' });
-    router.refresh();
+    setO((x) => ({ ...x, id: r.id ?? x.id, numero: r.numero ?? x.numero, token: r.token ?? x.token }));
+    if (!o.id && r.id) window.history.replaceState(null, '', `/admin/orcamentos/${r.id}`);
+    if (depois && r.id) await depois(r.id, r.token); else setMsg({ t: 'ok', s: r.ok ?? 'Salvo.' });
+    if (atualizar) router.refresh();
   });
 
-  const enviar = () => salvar(async (id) => {
-    const r = await marcarEnviado(id);
-    if (r.erro) { setMsg({ t: 'bad', s: r.erro }); return; }
-    setO((x) => ({ ...x, status: x.status === 'rascunho' ? 'enviado' : x.status, token: r.token }));
-    setLink(`${window.location.origin}/p/${r.token}`); setModal('enviar');
-  });
+  // Abre o link na hora; marcar como "enviado" acontece em segundo plano.
+  const abrirEnvio = (id: string, token: string) => {
+    setLink(`${window.location.origin}/p/${token}`); setModal('enviar');
+    if (o.status === 'rascunho') {
+      setO((x) => ({ ...x, status: 'enviado' }));
+      void marcarEnviado(id).then((r) => { if (r.erro) setMsg({ t: 'bad', s: `Atenção: ${r.erro} O link só funciona depois de marcado como enviado.` }); });
+    }
+  };
+  const enviar = () => {
+    if (o.id && o.token && !sujo) { abrirEnvio(o.id, o.token); return; }
+    salvar((id, token) => { if (token) abrirEnvio(id, token); }, false);
+  };
 
   const textoZap = (l: string) => `Olá, ${cli?.nome.split(' ')[0] ?? ''}! Segue o orçamento ${o.numero} da ${empresa.nome}.\n\nTotal: ${brl(t.total)}\nPagamento: ${condicaoTxt(o, t.total)}\nPrazo: ${prazoTxt(o)}\n\nNo link abaixo você vê todos os detalhes, baixa o PDF e pode aprovar online:\n${l}`;
   const copiar = async (s: string) => { try { await navigator.clipboard.writeText(s); setMsg({ t: 'ok', s: 'Copiado.' }); } catch { setMsg({ t: 'bad', s: 'Não foi possível copiar. Selecione e copie manualmente.' }); } };

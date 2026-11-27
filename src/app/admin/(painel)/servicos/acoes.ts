@@ -34,3 +34,15 @@ export async function salvarServico(id: string, d: { titulo: string; endereco: s
   revalidatePath('/admin', 'layout');
   return error ? { erro: 'Não foi possível salvar.' } : { ok: 'Serviço atualizado.' };
 }
+
+/** Conclui sem retirar materiais, registrando a confirmação nas anotações da OS. */
+export async function concluirSemBaixa(id: string): Promise<R> {
+  if (!(await adminAtual())) return { erro: 'Sessão expirada.' };
+  const sb = await supabaseServidor();
+  const { data: s } = await sb.from('servicos').select('notas').eq('id', id).single();
+  const hoje = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  const nota = `Concluído sem retirar materiais do estoque (confirmado em ${hoje}).`;
+  const { error } = await sb.from('servicos').update({ status: 'concluido', notas: [s?.notas, nota].filter(Boolean).join('\n') }).eq('id', id);
+  revalidatePath('/admin', 'layout');
+  return error ? { erro: 'Não foi possível concluir.' } : { ok: 'Serviço concluído. O estoque não foi alterado.' };
+}

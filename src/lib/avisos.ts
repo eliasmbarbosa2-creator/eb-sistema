@@ -1,6 +1,7 @@
 import 'server-only';
 import webpush from 'web-push';
 import { supabaseServico } from './supabase/servico';
+import { ehUrgente } from '@/lib/conteudo';
 
 type Sb = NonNullable<ReturnType<typeof supabaseServico>>;
 export type Pedido = { nome: string; telefone: string; servico: string; cidade: string; urgencia: string; mensagem: string; tipo: string };
@@ -97,7 +98,7 @@ export async function enviarPush(sb: Sb, titulo: string, corpo: string, url = '/
 export async function avisarNovoPedido(p: Pedido) {
   const sb = supabaseServico();
   if (!sb) { console.warn('[aviso] SUPABASE_SERVICE_ROLE_KEY não configurada: avisos desligados'); return; }
-  const corpo = `${p.servico}${p.cidade ? ' · ' + p.cidade : ''}${/^Urgente/.test(p.urgencia) ? ' · URGENTE' : ''}`;
+  const corpo = `${p.servico}${p.cidade ? ' · ' + p.cidade : ''}${ehUrgente(p.urgencia) ? ' · URGENTE' : ''}`;
   const [email, push] = await Promise.allSettled([enviarEmail(sb, p), enviarPush(sb, `Novo pedido: ${p.nome}`, corpo)]);
   console.log('[aviso] pedido novo:', 'e-mail', email.status === 'fulfilled' ? email.value : 'erro', '· celulares', push.status === 'fulfilled' ? push.value : 'erro');
 }
