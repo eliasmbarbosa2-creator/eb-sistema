@@ -2,6 +2,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { supabaseServidor, adminAtual } from '@/lib/supabase/server';
+import { arrobaInstagram } from '@/lib/dados-publicos';
 
 export type Estado = { erro?: string; ok?: string };
 
@@ -38,8 +39,18 @@ export async function salvarEmpresa(_: Estado, form: FormData): Promise<Estado> 
   const dados: Record<string, string> = {};
   for (const c of campos) dados[c] = String(form.get(c) ?? '').trim().slice(0, 200);
   if (!dados.nome) return { erro: 'O nome da empresa é obrigatório.' };
+  const ig = String(form.get('instagram') ?? '').trim();
+  const instagram = arrobaInstagram(ig);
+  if (ig && !instagram) return { erro: 'Instagram inválido. Use só o @, por exemplo: @ebinstalacoes' };
   const supabase = await supabaseServidor();
-  const { error } = await supabase.from('empresa').upsert({ id: 1, ...dados, atualizado_em: new Date().toISOString() });
+  const { error } = await supabase.from('empresa').upsert({ id: 1, ...dados, instagram, atualizado_em: new Date().toISOString() });
+  if (error?.message?.includes('instagram')) {
+    // Banco ainda sem a coluna: salva o resto e avisa.
+    const { error: e2 } = await supabase.from('empresa').upsert({ id: 1, ...dados, atualizado_em: new Date().toISOString() });
+    if (e2) return { erro: 'Não foi possível salvar. Tente de novo.' };
+    revalidatePath('/'); revalidatePath('/admin', 'layout');
+    return { erro: 'Dados salvos, menos o Instagram: rode a migração 0009_instagram.sql no Supabase (veja o README).' };
+  }
   if (error) return { erro: 'Não foi possível salvar. Tente de novo.' };
   revalidatePath('/');
   revalidatePath('/admin', 'layout');

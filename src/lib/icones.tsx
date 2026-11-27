@@ -13,6 +13,7 @@ export const ICONES: Record<string, string> = {
   shop:'<path d="M4 9l1.5-5h13L20 9"/><path d="M4 9h16v2a3 3 0 0 1-5.3 2 3 3 0 0 1-5.4 0A3 3 0 0 1 4 11z"/><path d="M5.5 13.5V20h13v-6.5"/>',
   fab:'<path d="M3 21V10l5 3V10l5 3V6h4l1 15z"/><path d="M8 21v-3h3v3"/>',
   wa:'<path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"/><path d="M9.2 8.8c0 3 2.5 5.8 5.8 6.2l1-1.4-1.9-1-.9.8c-1-.4-2.1-1.5-2.5-2.5l.8-.9-1-1.9z" fill="currentColor" stroke="none"/>',
+  ig:'<rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/>',
   bolt:'<path d="M13 3L5 13.5h6L10 21l9-11.5h-6z"/>'
 };
 

@@ -90,6 +90,11 @@ No **Supabase → SQL Editor** (modo *Database*), rode `supabase/migrations/0007
 ### 10. Excluir clientes e materiais
 No **Supabase → SQL Editor** (modo *Database*), rode `supabase/migrations/0008_excluir_clientes_materiais.sql`.
 
+### 11. Instagram no site
+1. No **Supabase → SQL Editor** (modo *Database*), rode `supabase/migrations/0009_instagram.sql`.
+2. No sistema, em **Dados da empresa**, preencha o campo **Instagram** (só o @, ex.: `@ebinstalacoes`) e salve.
+3. O ícone com o link aparece no rodapé e na seção de contato do site. Campo vazio = nada aparece.
+
 ## Desenvolvimento local
 
 ```bash

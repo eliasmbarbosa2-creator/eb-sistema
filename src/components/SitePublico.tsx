@@ -1,5 +1,5 @@
 import type { Empresa, Trabalho } from '@/lib/dados-publicos';
-import { linkWhatsApp, urlFoto } from '@/lib/dados-publicos';
+import { linkWhatsApp, linkInstagram, urlFoto } from '@/lib/dados-publicos';
 import type { ConteudoSite } from '@/lib/conteudo';
 import { Icone } from '@/lib/icones';
 import FormPedido from '@/components/FormPedido';
@@ -13,6 +13,7 @@ export default function SitePublico({ empresa: E, conteudo: T, trabalhos, previa
   const servicoPorCategoria = Object.fromEntries(T.servicos.map((s) => [s.titulo, s.nome || s.titulo]));
   const curto = E.nome.split(' ')[0];
   const wa = E.telefone ? linkWhatsApp(E.telefone, E.nome) : null;
+  const ig = E.instagram ? linkInstagram(E.instagram) : null;
 
   return (
     <>
@@ -142,6 +143,7 @@ export default function SitePublico({ empresa: E, conteudo: T, trabalhos, previa
               <div className="cinfo">
                 {E.telefone && <div><div className="k">Telefone e WhatsApp</div><div className="v">{E.telefone}</div></div>}
                 {E.email && <div><div className="k">E-mail</div><div className="v">{E.email}</div></div>}
+                {ig && <div><div className="k">Instagram</div><a className="v ig-l" href={ig} target="_blank" rel="noopener"><Icone nome="ig" tamanho={18} /> @{E.instagram}</a></div>}
                 {E.regiao && <div><div className="k">Região atendida</div><div>{E.regiao}</div></div>}
               </div>
               {wa && <a className="btn btn-wa btn-l" href={wa} target="_blank" rel="noopener"><Icone nome="wa" tamanho={20} /> Chamar no WhatsApp</a>}
@@ -161,7 +163,8 @@ export default function SitePublico({ empresa: E, conteudo: T, trabalhos, previa
             {E.registro && <span>{E.registro}</span>}{E.cidade && <span>{E.cidade}</span>}
           </div>
           <div className="fcol"><b>Serviços</b>{T.servicos.map((s, i) => <BotaoPedir key={i} className="link fl" servico={s.nome || s.titulo}>{s.titulo}</BotaoPedir>)}</div>
-          <div className="fcol"><b>Contato</b>{E.telefone && <span className="mono">{E.telefone}</span>}{E.email && <span>{E.email}</span>}</div>
+          <div className="fcol"><b>Contato</b>{E.telefone && <span className="mono">{E.telefone}</span>}{E.email && <span>{E.email}</span>}
+            {ig && <a className="ig-l" href={ig} target="_blank" rel="noopener" aria-label={`Instagram @${E.instagram}`}><Icone nome="ig" tamanho={18} /> @{E.instagram}</a>}</div>
         </div>
         <div className="foot-b">© {new Date().getFullYear()} {E.nome}</div>
       </footer>

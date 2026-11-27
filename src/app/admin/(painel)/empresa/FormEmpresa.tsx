@@ -4,7 +4,7 @@ import { salvarEmpresa, type Estado } from '../../acoes';
 
 const CAMPOS: [string, string, boolean?][] = [
   ['nome', 'Nome da empresa'], ['responsavel', 'Responsável técnico'], ['registro', 'Registro profissional (ex.: Técnico em Eletrotécnica · CFT nº …)', true],
-  ['telefone', 'Telefone / WhatsApp'], ['email', 'E-mail'], ['cidade', 'Cidade – UF'], ['regiao', 'Região atendida'],
+  ['telefone', 'Telefone / WhatsApp'], ['email', 'E-mail'], ['cidade', 'Cidade – UF'], ['regiao', 'Região atendida'], ['instagram', 'Instagram (só o @, ex.: @ebinstalacoes)'],
 ];
 
 export default function FormEmpresa({ inicial }: { inicial: Record<string, string> }) {
@@ -12,7 +12,7 @@ export default function FormEmpresa({ inicial }: { inicial: Record<string, strin
   return (
     <form action={acao} className="fgrid">
       {CAMPOS.map(([k, l, largo]) => (
-        <label key={k} className={`fld ${largo ? 'span2' : ''}`}><span>{l}</span><input name={k} defaultValue={inicial[k] ?? ''} required={k === 'nome'} /></label>
+        <label key={k} className={`fld ${largo ? 'span2' : ''}`}><span>{l}</span><input name={k} defaultValue={k === 'instagram' && inicial[k] ? '@' + inicial[k] : inicial[k] ?? ''} required={k === 'nome'} /></label>
       ))}
       <div className="span2 actions" style={{ alignItems: 'center' }}>
         <button className="btn btn-p" type="submit" disabled={enviando}>{enviando ? 'Salvando…' : 'Salvar dados'}</button>
