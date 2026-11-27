@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import StatusCliente from './StatusCliente';
 import NovoCliente from './NovoCliente';
+import ResponderCliente from './ResponderCliente';
 import { excluirClientes } from '../../acoes';
 import { dataHoraBR } from '@/lib/rotulos';
 import { ehUrgente } from '@/lib/conteudo';
@@ -17,7 +18,7 @@ const VAZIO: Resumo = { orcamentos: 0, servicos: 0, parcelas: 0, pagas: 0, retir
 const wa = (t: string) => { let d = t.replace(/\D/g, ''); if (d.length <= 11) d = '55' + d; return `https://wa.me/${d}`; };
 const pl = (n: number, s: string, p: string) => `${n} ${n === 1 ? s : p}`;
 
-export default function ListaClientes({ lista, resumo }: { lista: Cliente[]; resumo: Record<string, Resumo> }) {
+export default function ListaClientes({ lista, resumo, empresa }: { lista: Cliente[]; resumo: Record<string, Resumo>; empresa: { nome: string; responsavel: string; registro: string; telefone: string } }) {
   const router = useRouter();
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [modo, setModo] = useState(false);
@@ -77,6 +78,7 @@ export default function ListaClientes({ lista, resumo }: { lista: Cliente[]; res
             </div>
             {c.mensagem ? <p className="msg-c">{c.mensagem}</p> : <p className="sub">Sem descrição.</p>}
             <div className="actions" style={{ marginTop: 12 }}>
+              <ResponderCliente cliente={c} empresa={empresa} />
               <NovoCliente cliente={c} />
               <Link className="btn btn-s btn-p" href={`/admin/orcamentos/novo?cliente=${c.id}`}>Criar orçamento</Link>
               <button className="btn btn-s btn-g" onClick={() => abrirExclusao([c.id])}>Excluir</button>

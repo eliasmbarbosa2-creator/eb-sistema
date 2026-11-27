@@ -7,10 +7,11 @@ import ListaClientes, { type Cliente, type Resumo } from './ListaClientes';
 export default async function Clientes({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const { status = 'todos' } = await searchParams;
   const supabase = await supabaseServidor();
-  const [{ data }, { data: orcs }, { data: srvs }] = await Promise.all([
+  const [{ data }, { data: orcs }, { data: srvs }, { data: emp }] = await Promise.all([
     supabase.from('clientes').select('*').order('criado_em', { ascending: false }),
     supabase.from('orcamentos').select('cliente_id'),
     supabase.from('servicos').select('cliente_id,baixa_feita,parcelas(pago)'),
+    supabase.from('empresa').select('nome,responsavel,registro,telefone').eq('id', 1).maybeSingle(),
   ]);
   const todos = (data ?? []) as Cliente[];
   const lista = todos.filter((c) => status === 'todos' || c.status === status);
@@ -37,7 +38,7 @@ export default async function Clientes({ searchParams }: { searchParams: Promise
       </div>
       {lista.length === 0
         ? <div className="card"><p className="sub">{todos.length === 0 ? 'Nenhum pedido ainda. Os pedidos feitos pelo formulário do site aparecem aqui automaticamente.' : 'Nenhum cliente neste status.'}</p></div>
-        : <ListaClientes lista={lista} resumo={resumo} />}
+        : <ListaClientes lista={lista} resumo={resumo} empresa={emp ?? { nome: 'EB Instalações Elétricas', responsavel: '', registro: '', telefone: '' }} />}
     </>
   );
 }
