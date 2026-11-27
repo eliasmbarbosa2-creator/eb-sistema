@@ -26,7 +26,8 @@ export default function Financeiro({ parcelas }: { parcelas: Parcela[] }) {
   const fim = (r: { ok?: string; erro?: string }) => { setMsg(r.erro ? { t: 'bad', s: r.erro } : { t: 'ok', s: r.ok ?? '' }); setPagar(null); router.refresh(); };
   const cobrar = (p: Parcela) => {
     const c = p.servicos?.clientes; if (!c?.telefone) return null;
-    return linkWhatsAppPara(c.telefone, `Olá, ${c.nome.split(' ')[0]}! Tudo bem? Passando para lembrar da parcela "${p.descricao}" do serviço ${p.servicos?.numero}, no valor de ${brl(p.valor)}, com vencimento em ${dataBR(p.vencimento)}. Qualquer dúvida, estou à disposição.`);
+    const quando = p.vencimento < hoje ? `que venceu em ${dataBR(p.vencimento)}` : p.vencimento === hoje ? 'que vence hoje' : `com vencimento em ${dataBR(p.vencimento)}`;
+    return linkWhatsAppPara(c.telefone, `Olá, ${c.nome.split(' ')[0]}! Tudo bem? Passando para lembrar da parcela "${p.descricao}" do serviço ${p.servicos?.numero}, no valor de ${brl(p.valor)}, ${quando}. Qualquer dúvida, estou à disposição.`);
   };
   const rot = { todos: 'Todas', aberto: 'A vencer', atrasado: 'Atrasadas', pago: 'Pagas' } as const;
 
@@ -46,7 +47,7 @@ export default function Financeiro({ parcelas }: { parcelas: Parcela[] }) {
           <div className="tw"><table className="tbl stk-t mv-t" style={{ minWidth: 800 }}>
             <thead><tr><th>Vencimento</th><th>Cliente / serviço</th><th>Parcela</th><th className="r">Valor</th><th>Situação</th><th></th></tr></thead>
             <tbody>{lista.map((p) => {
-              const z = atrasada(p) ? cobrar(p) : null;
+              const z = !p.pago ? cobrar(p) : null;
               return (
                 <tr key={p.id}>
                   <td className="mono" data-label="Vencimento">{dataBR(p.vencimento)}</td>
@@ -54,10 +55,11 @@ export default function Financeiro({ parcelas }: { parcelas: Parcela[] }) {
                   <td data-label="Parcela">{p.descricao}</td>
                   <td className="r mono" data-label="Valor"><b>{brl(p.valor)}</b></td>
                   <td data-label="Situação">{p.pago ? <><span className="pill t-ok">Pago</span><div className="sub">{dataBR(p.pago_em)} · {p.forma}</div></>
-                    : atrasada(p) ? <span className="pill t-bad">Atrasada {diasEntre(p.vencimento, hoje)} d</span> : <span className="pill t-info">A vencer</span>}</td>
+                    : atrasada(p) ? <span className="pill t-bad">Atrasada {diasEntre(p.vencimento, hoje)} d</span> : p.vencimento === hoje ? <span className="pill t-warn">Vence hoje</span> : <span className="pill t-info">A vencer</span>}</td>
                   <td className="r c-act" data-label=""><div className="rowact">
                     {p.pago ? <button className="btn btn-s btn-g" disabled={ocupado} onClick={() => iniciar(async () => fim(await desfazerPagamento(p.id)))}>Desfazer</button> : <>
-                      {z && <a className="btn btn-s" href={z} target="_blank" rel="noopener">Cobrar no WhatsApp</a>}
+                      {z ? <a className={`btn btn-s ${atrasada(p) ? 'btn-warn' : ''}`} href={z} target="_blank" rel="noopener">{atrasada(p) ? 'Cobrar no WhatsApp' : 'Lembrar no WhatsApp'}</a>
+                        : <span className="sub" title="Cadastre o telefone do cliente">sem telefone</span>}
                       <button className="btn btn-s btn-p" onClick={() => setPagar(p)}>Registrar pagamento</button></>}
                   </div></td>
                 </tr>

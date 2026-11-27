@@ -463,3 +463,4 @@ html{scroll-behavior:smooth}
 .aprova{display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid var(--ok);border-radius:var(--r);background:var(--ok-soft)}
 .req .msg{margin:0;padding:10px 14px;background:var(--sunk);border-radius:var(--r);white-space:pre-wrap;font-size:.92rem}
 .tbl th.r{text-align:right}
+.rowact{flex-wrap:wrap}
