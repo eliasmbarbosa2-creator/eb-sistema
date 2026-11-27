@@ -60,3 +60,27 @@ export async function entradaEmLote(itens: { id: string; quantidade: number }[],
   revalidatePath('/admin', 'layout');
   return ok ? { ok: `Entrada registrada para ${ok} ${ok === 1 ? 'material' : 'materiais'}.` } : { erro: 'Informe ao menos uma quantidade.' };
 }
+
+export type UsoMaterial = { numero: string; status: string; cliente: string; quantidade: number; retirado: boolean };
+/** Em quais orçamentos o material aparece (para decidir o que fazer antes de excluir). */
+export async function usoDoMaterial(id: string): Promise<UsoMaterial[]> {
+  if (!(await adminAtual())) return [];
+  const sb = await supabaseServidor();
+  const { data } = await sb.from('orcamento_itens')
+    .select('quantidade,orcamentos(id,numero,status,clientes(nome),servicos(baixa_feita))').eq('material_id', id);
+  type L = { quantidade: number; orcamentos: { numero: string; status: string; clientes: { nome: string } | null; servicos: { baixa_feita: boolean }[] } | null };
+  return ((data ?? []) as unknown as L[]).filter((l) => l.orcamentos).map((l) => ({
+    numero: l.orcamentos!.numero, status: l.orcamentos!.status, cliente: l.orcamentos!.clientes?.nome ?? '',
+    quantidade: Number(l.quantidade), retirado: (l.orcamentos!.servicos ?? []).some((s) => s.baixa_feita),
+  }));
+}
+
+export async function excluirMaterial(id: string, substituto: string | null): Promise<R> {
+  if (!(await adminAtual())) return { erro: 'Sessão expirada. Entre novamente.' };
+  const sb = await supabaseServidor();
+  const { data, error } = await sb.rpc('excluir_material', { p_mat: id, p_substituto: substituto });
+  if (error) return { erro: error.message.includes('substituto') || error.message.includes('outro') ? 'Escolha um material substituto válido.' : 'Não foi possível excluir.' };
+  revalidatePath('/admin', 'layout');
+  const n = (data as { itens?: number })?.itens ?? 0;
+  return { ok: n ? `Material excluído. ${n} ${n === 1 ? 'item de orçamento foi atualizado' : 'itens de orçamento foram atualizados'}.` : 'Material excluído.' };
+}

@@ -172,3 +172,18 @@ export async function testarAvisos(): Promise<Estado> {
   const n = await enviarPush(sb, 'Teste de aviso', 'Se você está vendo isto, os avisos de pedido novo estão funcionando.', '/admin');
   return n ? { ok: `Aviso de teste enviado para ${n} aparelho(s).` } : { erro: 'Nenhum aparelho com avisos ativados.' };
 }
+
+export async function excluirClientes(ids: string[], devolver: boolean, apagarPagos: boolean): Promise<Estado> {
+  if (!(await adminAtual())) return { erro: 'Sessão expirada. Entre novamente.' };
+  const lista = ids.filter((i) => /^[0-9a-f-]{36}$/i.test(i)).slice(0, 500);
+  if (!lista.length) return { erro: 'Nenhum cliente selecionado.' };
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase.rpc('excluir_clientes', { p_ids: lista, p_devolver: devolver, p_apagar_pagos: apagarPagos });
+  if (error) {
+    console.warn('[excluir clientes]', error.message);
+    return { erro: error.message.includes('pagamento') ? `Não excluído: ${error.message.replace(/^.*?tem/, 'tem')}. Marque a opção de apagar também os pagamentos, se for isso mesmo.` : 'Não foi possível excluir.' };
+  }
+  revalidatePath('/admin', 'layout');
+  const n = (data as { excluidos?: number })?.excluidos ?? 0;
+  return { ok: `${n} ${n === 1 ? 'cliente excluído' : 'clientes excluídos'}.` };
+}

@@ -87,6 +87,9 @@ No **Supabase → SQL Editor** (modo *Database*), rode `supabase/migrations/0006
 ### 9. Devolver material ao estoque
 No **Supabase → SQL Editor** (modo *Database*), rode `supabase/migrations/0007_devolver_material.sql`.
 
+### 10. Excluir clientes e materiais
+No **Supabase → SQL Editor** (modo *Database*), rode `supabase/migrations/0008_excluir_clientes_materiais.sql`.
+
 ## Desenvolvimento local
 
 ```bash

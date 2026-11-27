@@ -1,7 +1,7 @@
 'use client';
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { salvarMaterial, movimentar, entradaEmLote } from './acoes';
+import { salvarMaterial, movimentar, entradaEmLote, usoDoMaterial, excluirMaterial, type UsoMaterial } from './acoes';
 import { brl, num, dataBR, CATEGORIAS_MATERIAL, UNIDADES_MATERIAL, fmtQtd } from '@/lib/negocio';
 
 export type Material = { id: string; codigo: string; nome: string; categoria: string; unidade: string; quantidade: number; minimo: number; custo: number; preco: number; local: string; fornecedor: string };
@@ -9,7 +9,7 @@ export type Mov = { id: string; material_id: string; tipo: 'entrada' | 'saida' |
 type Reservas = Record<string, { q: number; os: string[] }>;
 type Modal =
   | { t: 'ficha'; id: string } | { t: 'mov'; id: string; tipo: 'entrada' | 'saida' } | { t: 'ajuste'; id: string }
-  | { t: 'material'; m?: Material } | { t: 'compras' } | null;
+  | { t: 'material'; m?: Material } | { t: 'compras' } | { t: 'excluir'; id: string } | null;
 
 const MOV_T = { entrada: ['Entrada', 't-ok'], saida: ['Saída', 't-accent'], ajuste: ['Ajuste de inventário', 't-info'] } as const;
 
@@ -172,6 +172,7 @@ export default function Estoque({ materiais, movs, reservas, usos }: { materiais
                   <button className="btn" onClick={() => abrir({ t: 'mov', id: m.id, tipo: 'saida' })}>− Saída</button>
                   <button className="btn" onClick={() => abrir({ t: 'ajuste', id: m.id })}>Ajustar contagem</button>
                   <button className="btn btn-g" onClick={() => abrir({ t: 'material', m })}>Editar cadastro</button>
+                  <button className="btn btn-g" onClick={() => abrir({ t: 'excluir', id: m.id })}>Excluir material</button>
                 </div>
                 <div><h3 className="h2" style={{ fontSize: '1.1rem', marginBottom: 6 }}>Histórico</h3>
                   <div className="tw"><table className="tbl stk-t mv-t"><thead><tr><th>Data</th><th>Tipo</th><th className="r">Quantidade</th><th>Observação</th></tr></thead>
@@ -218,6 +219,8 @@ export default function Estoque({ materiais, movs, reservas, usos }: { materiais
               );
             })()}
 
+            {modal.t === 'excluir' && <ExcluirMaterial m={porId(modal.id)} outros={materiais.filter((x) => x.id !== modal.id)} ocupado={ocupado} erro={erro} onFechar={() => setModal(null)}
+              onExcluir={(sub) => iniciar(async () => fim(await excluirMaterial(modal.id, sub)))} />}
             {modal.t === 'compras' && <Compras itens={baixos.map((m) => ({ m, ...info[m.id] }))} ocupado={ocupado} erro={erro} onFechar={() => setModal(null)}
               onEntrada={(lista, nf, forn) => iniciar(async () => fim(await entradaEmLote(lista, nf, forn)))} />}
           </div>
@@ -290,6 +293,56 @@ function Compras({ itens, ocupado, erro, onFechar, onEntrada }: {
         <button className="btn" onClick={copiar}>Copiar pedido para o fornecedor</button>
         <button className="btn btn-ok" disabled={ocupado} onClick={() => onEntrada(itens.map((i) => ({ id: i.m.id, quantidade: qtd[i.m.id] || 0 })), nf, forn)}>{ocupado ? 'Registrando…' : 'Material chegou: dar entrada'}</button>
       </div>
+    </>
+  );
+}
+
+const ST_ORC: Record<string, string> = { rascunho: 'Rascunho', enviado: 'Enviado', aprovado: 'Aprovado', recusado: 'Recusado' };
+function ExcluirMaterial({ m, outros, ocupado, erro, onFechar, onExcluir }: { m: Material; outros: Material[]; ocupado: boolean; erro: string; onFechar: () => void; onExcluir: (substituto: string | null) => void }) {
+  const [uso, setUso] = useState<UsoMaterial[] | null>(null);
+  const [opcao, setOpcao] = useState<'substituir' | 'manter'>('substituir');
+  const [sub, setSub] = useState('');
+  const [busca, setBusca] = useState('');
+  useEffect(() => { usoDoMaterial(m.id).then(setUso).catch(() => setUso([])); }, [m.id]);
+  const pendentes = (uso ?? []).filter((u) => !u.retirado);
+  const mesmaCat = outros.filter((o) => o.categoria === m.categoria);
+  const opcoes = (busca ? outros.filter((o) => [o.nome, o.codigo].join(' ').toLowerCase().includes(busca.toLowerCase())) : [...mesmaCat, ...outros.filter((o) => o.categoria !== m.categoria)]).slice(0, 40);
+  const escolhido = outros.find((o) => o.id === sub);
+  return (
+    <>
+      <div className="mh"><div><div className="eyebrow">Excluir material</div><h2>{m.nome}</h2></div><button className="x" onClick={onFechar} aria-label="Fechar">×</button></div>
+      {m.quantidade > 0 && <p className="banner t-warn">Este material tem <b>{fmtQtd(m.quantidade, m.unidade)}</b> em estoque. Ao excluir, esse saldo sai do estoque (o histórico de movimentações é mantido).</p>}
+      {uso === null ? <p className="sub">Verificando os orçamentos…</p> : uso.length === 0 ? (
+        <p>Este material não está em nenhum orçamento. Pode excluir sem preocupação.</p>
+      ) : (<>
+        <p>Este material está em <b>{uso.length} {uso.length === 1 ? 'orçamento' : 'orçamentos'}</b>:</p>
+        <ul className="ml">{uso.map((u, i) => <li key={i}><span>{u.numero} · {u.cliente} <small>({ST_ORC[u.status] ?? u.status}{u.retirado ? ', material já retirado' : ''})</small></span><span className="mono">{fmtQtd(u.quantidade, m.unidade)}</span></li>)}</ul>
+        {pendentes.length > 0 ? (<>
+          <p><b>O que fazer nesses orçamentos?</b></p>
+          <div className="escolhas">
+            <label className={`opc ${opcao === 'substituir' ? 'on' : ''}`}><input type="radio" name="opc" checked={opcao === 'substituir'} onChange={() => setOpcao('substituir')} />
+              <span><b>Substituir por outro material</b><br /><span className="sub">O item passa a usar o material escolhido no estoque (reserva e retirada). Descrição, quantidade e valor do orçamento não mudam.</span></span></label>
+            {opcao === 'substituir' && (
+              <div className="subst">
+                <input type="search" placeholder="Buscar material…" value={busca} onChange={(e) => setBusca(e.target.value)} aria-label="Buscar material substituto" />
+                <div className="subst-l">{opcoes.map((o) => (
+                  <button type="button" key={o.id} className={`subst-i ${sub === o.id ? 'on' : ''}`} onClick={() => setSub(o.id)}>
+                    <span><b>{o.nome}</b><span className="sub">{[o.codigo, o.categoria].filter(Boolean).join(' · ')}</span></span>
+                    <span className="mono sub">{fmtQtd(o.quantidade, o.unidade)} · {brl(o.preco)}</span>
+                  </button>))}
+                  {opcoes.length === 0 && <p className="sub">Nenhum material encontrado.</p>}</div>
+                {escolhido && escolhido.unidade !== m.unidade && <p className="banner t-warn">Atenção: unidades diferentes ({m.unidade} → {escolhido.unidade}). A quantidade nos orçamentos não é convertida.</p>}
+              </div>
+            )}
+            <label className={`opc ${opcao === 'manter' ? 'on' : ''}`}><input type="radio" name="opc" checked={opcao === 'manter'} onChange={() => setOpcao('manter')} />
+              <span><b>Tirar do estoque e deixar só no orçamento</b><br /><span className="sub">O item continua no orçamento com a mesma descrição, quantidade e valor, mas deixa de reservar ou retirar material do estoque.</span></span></label>
+          </div>
+        </>) : <p className="sub">Em todos eles o material já foi retirado do estoque. Esses registros ficam como estão.</p>}
+      </>)}
+      {erro && <p className="lerr" role="alert">{erro}</p>}
+      <div className="mfoot"><button className="btn btn-g" onClick={onFechar}>Cancelar</button>
+        <button className="btn btn-p" disabled={ocupado || uso === null || (pendentes.length > 0 && opcao === 'substituir' && !sub)}
+          onClick={() => onExcluir(pendentes.length > 0 && opcao === 'substituir' ? sub : null)}>{ocupado ? 'Excluindo…' : 'Excluir material'}</button></div>
     </>
   );
 }
