@@ -8,7 +8,7 @@ const ITENS: { href: string; rotulo: string; pronto: boolean }[] = [
   { href: '/admin/servicos', rotulo: 'Serviços', pronto: true },
   { href: '/admin/financeiro', rotulo: 'Financeiro', pronto: true },
   { href: '/admin/estoque', rotulo: 'Estoque', pronto: true },
-  { href: '/admin/conteudo', rotulo: 'Conteúdo do site', pronto: false },
+  { href: '/admin/conteudo', rotulo: 'Conteúdo do site', pronto: true },
   { href: '/admin/portfolio', rotulo: 'Portfólio', pronto: true },
   { href: '/admin/empresa', rotulo: 'Dados da empresa', pronto: true },
 ];

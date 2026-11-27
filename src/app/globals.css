@@ -464,3 +464,4 @@ html{scroll-behavior:smooth}
 .req .msg{margin:0;padding:10px 14px;background:var(--sunk);border-radius:var(--r);white-space:pre-wrap;font-size:.92rem}
 .tbl th.r{text-align:right}
 .rowact{flex-wrap:wrap}
+.pvbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding-block:10px;background:var(--warn-soft);color:var(--warn);font-size:.9rem;position:sticky;top:0;z-index:25}

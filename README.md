@@ -14,7 +14,7 @@ Site público + sistema de gestão (clientes, orçamentos, serviços, financeiro
 | 2. Site público | Formulário de orçamento, aviso por e-mail e no celular, portfólio com fotos, Clientes, recuperar senha | ✅ pronta |
 | 3A/3B. Estoque e Orçamentos | Estoque com reservas e lista de compras; orçamentos com PDF, envio pelo WhatsApp e aprovação online | ✅ pronta |
 | 3C. Serviços e Financeiro | Ordens de serviço, baixa de material, parcelas, pagamentos e cobrança; Painel com próximas ações | ✅ pronta |
-| 4. Acabamento | Editor do conteúdo do site, backup | próxima |
+| 4. Acabamento | Editor do conteúdo do site com pré-visualização, backup em Excel (manual e semanal por e-mail), rotina que mantém o banco ativo | ✅ pronta |
 
 ## Como colocar no ar (uma vez só)
 
@@ -65,6 +65,16 @@ O cliente vê a proposta pelo link `/p/<código>`: o código é secreto e imposs
 
 ### 5. Etapa 3C (serviços e financeiro)
 No **Supabase → SQL Editor** (modo *Database*), rode `supabase/migrations/0004_servicos.sql`.
+
+### 6. Etapa 4 (backup automático e banco sempre ativo)
+1. Na Vercel, cadastre a variável `CRON_SECRET` com um texto longo e aleatório (ex.: gere uma senha de 32 caracteres no gerenciador de senhas). Ela impede que outras pessoas disparem a rotina.
+2. **Deployments → ⋯ → Redeploy**.
+
+O arquivo `vercel.json` agenda a rotina `/api/rotina` todo dia às 8h (horário de Brasília):
+- faz uma consulta leve no banco, porque o **Supabase gratuito pausa projetos sem uso por 7 dias**;
+- às **segundas-feiras**, envia por e-mail a planilha com todos os dados (precisa de `RESEND_API_KEY`).
+
+O backup manual fica em **Sistema → Dados da empresa → Baixar backup (Excel)**.
 
 ## Desenvolvimento local
 

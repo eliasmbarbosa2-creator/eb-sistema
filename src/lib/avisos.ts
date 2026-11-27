@@ -34,7 +34,7 @@ export async function chavePublicaVapid(): Promise<string | null> {
   return (await chavesVapid(sb))?.publica ?? null;
 }
 
-async function emailDoAviso(sb: Sb) {
+export async function emailDoAviso(sb: Sb) {
   if (process.env.AVISO_EMAIL) return process.env.AVISO_EMAIL.trim();
   const { data } = await sb.from('empresa').select('email').eq('id', 1).maybeSingle();
   return data?.email?.trim() || '';

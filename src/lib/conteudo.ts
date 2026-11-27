@@ -165,3 +165,32 @@ export function mesclarConteudo(salvo: unknown): ConteudoSite {
   const s = (salvo && typeof salvo === 'object' ? salvo : {}) as Partial<ConteudoSite>;
   return { ...CONTEUDO_PADRAO, ...s };
 }
+
+/** Valida e limpa o conteúdo vindo do editor antes de gravar. */
+export function limparConteudo(x: unknown, icones: string[]): ConteudoSite {
+  const o = (x && typeof x === 'object' ? x : {}) as Record<string, unknown>;
+  const s = (v: unknown, max: number, padrao = '') => (typeof v === 'string' ? v.trim().slice(0, max) : padrao);
+  const ic = (v: unknown, padrao: string) => (typeof v === 'string' && icones.includes(v) ? v : padrao);
+  const lista = <T,>(v: unknown, max: number, f: (e: Record<string, unknown>) => T | null) =>
+    (Array.isArray(v) ? v : []).slice(0, max).map((e) => f((e && typeof e === 'object' ? e : {}) as Record<string, unknown>)).filter((e): e is T => e !== null);
+  const P = CONTEUDO_PADRAO;
+  return {
+    heroTitulo: s(o.heroTitulo, 160, P.heroTitulo) || P.heroTitulo,
+    heroTexto: s(o.heroTexto, 600),
+    garantias: lista(o.garantias, 8, (e) => (s(e.texto, 80) ? { icone: ic(e.icone, 'shield'), texto: s(e.texto, 80) } : null)),
+    servicosTitulo: s(o.servicosTitulo, 120) || P.servicosTitulo, servicosTexto: s(o.servicosTexto, 400),
+    servicos: lista(o.servicos, 12, (e) => (s(e.titulo, 80) ? {
+      icone: ic(e.icone, 'bolt'), titulo: s(e.titulo, 80), nome: s(e.nome, 80) || s(e.titulo, 80), texto: s(e.texto, 500),
+      itens: (Array.isArray(e.itens) ? e.itens : []).map((i) => s(i, 120)).filter(Boolean).slice(0, 12),
+    } : null)),
+    segmentos: lista(o.segmentos, 6, (e) => (s(e.titulo, 60) ? { icone: ic(e.icone, 'home'), titulo: s(e.titulo, 60), texto: s(e.texto, 300) } : null)),
+    trabalhosTitulo: s(o.trabalhosTitulo, 120) || P.trabalhosTitulo,
+    difTitulo: s(o.difTitulo, 120) || P.difTitulo,
+    diferenciais: lista(o.diferenciais, 8, (e) => (s(e.titulo, 80) ? { icone: ic(e.icone, 'shield'), titulo: s(e.titulo, 80), texto: s(e.texto, 300) } : null)),
+    etapasTitulo: s(o.etapasTitulo, 120) || P.etapasTitulo,
+    etapas: lista(o.etapas, 8, (e) => (s(e.titulo, 60) ? { titulo: s(e.titulo, 60), texto: s(e.texto, 300) } : null)),
+    faqTitulo: s(o.faqTitulo, 120) || P.faqTitulo, faqTexto: s(o.faqTexto, 200),
+    faq: lista(o.faq, 20, (e) => (s(e.pergunta, 200) ? { pergunta: s(e.pergunta, 200), resposta: s(e.resposta, 1500) } : null)),
+    contatoTitulo: s(o.contatoTitulo, 120) || P.contatoTitulo, contatoTexto: s(o.contatoTexto, 400), contatoDica: s(o.contatoDica, 300),
+  };
+}
